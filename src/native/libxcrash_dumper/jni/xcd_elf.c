@@ -37,8 +37,7 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wpadded"
-struct xcd_elf
-{
+struct xcd_elf {
     pid_t                pid;
     xcd_memory_t        *memory;
     uintptr_t            load_bias;
@@ -48,8 +47,7 @@ struct xcd_elf
 };
 #pragma clang diagnostic pop
 
-int xcd_elf_is_valid(xcd_memory_t *memory)
-{
+int xcd_elf_is_valid(xcd_memory_t *memory) {
     if(NULL == memory) return 0;
 
     uint8_t e_ident[SELFMAG + 1];
@@ -67,8 +65,7 @@ int xcd_elf_is_valid(xcd_memory_t *memory)
     return 1;
 }
 
-size_t xcd_elf_get_max_size(xcd_memory_t *memory)
-{
+size_t xcd_elf_get_max_size(xcd_memory_t *memory) {
     ElfW(Ehdr) ehdr;
 
     if(0 != xcd_memory_read_fully(memory, 0, &ehdr, sizeof(ehdr))) return 0;
@@ -77,17 +74,18 @@ size_t xcd_elf_get_max_size(xcd_memory_t *memory)
     return ehdr.e_shoff + ehdr.e_shentsize * ehdr.e_shnum;
 }
 
-int xcd_elf_create(xcd_elf_t **self, pid_t pid, xcd_memory_t *memory)
-{
+int xcd_elf_create(xcd_elf_t **self, pid_t pid, xcd_memory_t *memory) {
     int r;
     
-    if(NULL == (*self = calloc(1, sizeof(xcd_elf_t)))) return XCC_ERRNO_NOMEM;
+    if(NULL == (*self = calloc(1, sizeof(xcd_elf_t))))
+        return XCC_ERRNO_NOMEM;
     (*self)->pid = pid;
     (*self)->memory = memory;
 
     //create ELF interface, save load bias
-    if(0 != (r = xcd_elf_interface_create(&((*self)->interface), pid, memory, &((*self)->load_bias))))
-    {
+    if(0 != (r = xcd_elf_interface_create(&((*self)->interface),
+            pid, memory, &((*self)->load_bias)))) {
+
         free(*self);
         return r;
     }
@@ -95,18 +93,17 @@ int xcd_elf_create(xcd_elf_t **self, pid_t pid, xcd_memory_t *memory)
     return 0;
 }
 
-uintptr_t xcd_elf_get_load_bias(xcd_elf_t *self)
-{
+uintptr_t xcd_elf_get_load_bias(xcd_elf_t *self) {
     return self->load_bias;
 }
 
-xcd_memory_t *xcd_elf_get_memory(xcd_elf_t *self)
-{
+xcd_memory_t *xcd_elf_get_memory(xcd_elf_t *self) {
     return self->memory;
 }
 
-int xcd_elf_step(xcd_elf_t *self, uintptr_t rel_pc, uintptr_t step_pc, xcd_regs_t *regs, int *finished, int *sigreturn)
-{
+int xcd_elf_step(xcd_elf_t *self, uintptr_t rel_pc, uintptr_t step_pc,
+                 xcd_regs_t *regs, int *finished, int *sigreturn) {
+
     *finished = 0;
     *sigreturn = 0;
     
@@ -122,22 +119,26 @@ int xcd_elf_step(xcd_elf_t *self, uintptr_t rel_pc, uintptr_t step_pc, xcd_regs_
     }
 
     //try DWARF (.debug_frame and .eh_frame)
-    if(0 == xcd_elf_interface_dwarf_step(self->interface, step_pc, regs, finished)) return 0;
+    if (0 == xcd_elf_interface_dwarf_step(self->interface, step_pc, regs, finished))
+        return 0;
 
     //create GNU interface (only once)
-    if(NULL == self->gnu_interface && 0 == self->gnu_interface_created)
-    {
+    if(NULL == self->gnu_interface && 0 == self->gnu_interface_created) {
         self->gnu_interface_created = 1;
         self->gnu_interface = xcd_elf_interface_gnu_create(self->interface);
     }
 
     //try DWARF (.debug_frame and .eh_frame) in GNU interface
-    if(NULL != self->gnu_interface)
-        if(0 == xcd_elf_interface_dwarf_step(self->gnu_interface, step_pc, regs, finished)) return 0;
+    if(NULL != self->gnu_interface) {
+        if(0 == xcd_elf_interface_dwarf_step(self->gnu_interface,
+                step_pc, regs, finished))
+            return 0;
+    }
 
     //try .ARM.exidx
 #ifdef __arm__
-    if(0 == xcd_elf_interface_arm_exidx_step(self->interface, step_pc, regs, finished)) return 0;
+    if(0 == xcd_elf_interface_arm_exidx_step(self->interface, step_pc, regs, finished))
+        return 0;
 #endif
 
 #if XCD_ELF_DEBUG
@@ -146,8 +147,9 @@ int xcd_elf_step(xcd_elf_t *self, uintptr_t rel_pc, uintptr_t step_pc, xcd_regs_
     return XCC_ERRNO_MISSING;
 }
 
-int xcd_elf_get_function_info(xcd_elf_t *self, uintptr_t addr, char **name, size_t *name_offset)
-{
+int xcd_elf_get_function_info(xcd_elf_t *self, uintptr_t addr,
+        char** name, size_t *name_offset) {
+
     int r;
 
     //try ELF interface

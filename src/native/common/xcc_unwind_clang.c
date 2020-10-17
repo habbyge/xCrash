@@ -45,8 +45,7 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wpadded"
 
-typedef struct
-{
+typedef struct {
     size_t      frame_num;
     ucontext_t *uc;
     char       *buf;
@@ -61,57 +60,43 @@ typedef struct
 
 #pragma clang diagnostic pop
 
-static int xcc_unwind_clang_record_frame(xcc_unwind_clang_t *self, uintptr_t pc)
-{
+static int xcc_unwind_clang_record_frame(xcc_unwind_clang_t *self, uintptr_t pc) {
     Dl_info info;
     size_t  len;
     
     //append line for current frame
-    if(0 == dladdr((void *)pc, &info) || (uintptr_t)info.dli_fbase > pc)
-    {
+    if(0 == dladdr((void *)pc, &info) || (uintptr_t)info.dli_fbase > pc) {
         len = xcc_fmt_snprintf(self->buf + self->buf_used, self->buf_len - self->buf_used,
                                "    #%02zu pc %0"XCC_UTIL_FMT_ADDR"  <unknown>\n",
                                self->frame_num, pc);
-    }
-    else
-    {
-        if(NULL == info.dli_fname || '\0' == info.dli_fname[0])
-        {
+    } else {
+        if(NULL == info.dli_fname || '\0' == info.dli_fname[0]) {
             len = xcc_fmt_snprintf(self->buf + self->buf_used, self->buf_len - self->buf_used,
-                                   "    #%02zu pc %0"XCC_UTIL_FMT_ADDR"  <anonymous:%"XCC_UTIL_FMT_ADDR">\n",
-                                   self->frame_num, pc - (uintptr_t)info.dli_fbase, (uintptr_t)info.dli_fbase);
-        }
-        else
-        {
-            if(NULL == info.dli_sname || '\0' == info.dli_sname[0])
-            {
+                   "    #%02zu pc %0"XCC_UTIL_FMT_ADDR"  <anonymous:%"XCC_UTIL_FMT_ADDR">\n",
+                   self->frame_num, pc - (uintptr_t)info.dli_fbase, (uintptr_t)info.dli_fbase);
+        } else {
+            if(NULL == info.dli_sname || '\0' == info.dli_sname[0]) {
                 len = xcc_fmt_snprintf(self->buf + self->buf_used, self->buf_len - self->buf_used,
-                                       "    #%02zu pc %0"XCC_UTIL_FMT_ADDR"  %s\n",
-                                       self->frame_num, pc - (uintptr_t)info.dli_fbase, info.dli_fname);
-            }
-            else
-            {
-                if(0 == (uintptr_t)info.dli_saddr || (uintptr_t)info.dli_saddr > pc)
-                {
+                       "    #%02zu pc %0"XCC_UTIL_FMT_ADDR"  %s\n",
+                       self->frame_num, pc - (uintptr_t)info.dli_fbase, info.dli_fname);
+            } else {
+                if(0 == (uintptr_t)info.dli_saddr || (uintptr_t)info.dli_saddr > pc) {
                     len = xcc_fmt_snprintf(self->buf + self->buf_used, self->buf_len - self->buf_used,
-                                           "    #%02zu pc %0"XCC_UTIL_FMT_ADDR"  %s (%s)\n",
-                                           self->frame_num, pc - (uintptr_t)info.dli_fbase, info.dli_fname,
-                                           info.dli_sname);
-                }
-                else
-                {
+                           "    #%02zu pc %0"XCC_UTIL_FMT_ADDR"  %s (%s)\n",
+                           self->frame_num, pc - (uintptr_t)info.dli_fbase, info.dli_fname,
+                           info.dli_sname);
+                } else {
                     len = xcc_fmt_snprintf(self->buf + self->buf_used, self->buf_len - self->buf_used,
-                                           "    #%02zu pc %0"XCC_UTIL_FMT_ADDR"  %s (%s+%"PRIuPTR")\n",
-                                           self->frame_num, pc - (uintptr_t)info.dli_fbase, info.dli_fname,
-                                           info.dli_sname, pc - (uintptr_t)info.dli_saddr);
+                               "    #%02zu pc %0"XCC_UTIL_FMT_ADDR"  %s (%s+%"PRIuPTR")\n",
+                               self->frame_num, pc - (uintptr_t)info.dli_fbase, info.dli_fname,
+                               info.dli_sname, pc - (uintptr_t)info.dli_saddr);
                 }
             }
         }
     }
 
     //truncated?
-    if(len >= self->buf_len - self->buf_used)
-    {
+    if(len >= self->buf_len - self->buf_used) {
         self->buf[self->buf_len - 2] = '\n';
         self->buf[self->buf_len - 1] = '\0';
         len = self->buf_len - self->buf_used - 1;
@@ -119,38 +104,42 @@ static int xcc_unwind_clang_record_frame(xcc_unwind_clang_t *self, uintptr_t pc)
 
     //check remaining space length in the buffer
     self->buf_used += len;
-    if(self->buf_len - self->buf_used < 20) return XCC_ERRNO_NOSPACE;
+    if (self->buf_len - self->buf_used < 20) {
+        return XCC_ERRNO_NOSPACE;
+    }
 
     //check unwinding limit
     self->frame_num++;
-    if(self->frame_num >= MAX_FRAMES) return XCC_ERRNO_RANGE;
+    if (self->frame_num >= MAX_FRAMES) {
+        return XCC_ERRNO_RANGE;
+    }
 
     return 0;
 }
 
-static _Unwind_Reason_Code xcc_unwind_clang_callback(struct _Unwind_Context* unw_ctx, void* arg)
-{
+static _Unwind_Reason_Code xcc_unwind_clang_callback(struct _Unwind_Context* unw_ctx, void* arg) {
     xcc_unwind_clang_t *self = (xcc_unwind_clang_t *)arg;
     uintptr_t pc = _Unwind_GetIP(unw_ctx);
     uintptr_t sp = _Unwind_GetCFA(unw_ctx);
 
-    if(0 == self->found_sig_pc)
-    {
-        if((self->sig_pc >= sizeof(uintptr_t) && pc <= self->sig_pc + sizeof(uintptr_t) && pc >= self->sig_pc - sizeof(uintptr_t)) ||
-           (self->sig_lr >= sizeof(uintptr_t) && pc <= self->sig_lr + sizeof(uintptr_t) && pc >= self->sig_lr - sizeof(uintptr_t)))
-        {
+    if (0 == self->found_sig_pc) {
+        if ((self->sig_pc >= sizeof(uintptr_t) &&
+                pc <= self->sig_pc + sizeof(uintptr_t) &&
+                pc >= self->sig_pc - sizeof(uintptr_t))
+                || (self->sig_lr >= sizeof(uintptr_t) &&
+                pc <= self->sig_lr + sizeof(uintptr_t) &&
+                pc >= self->sig_lr - sizeof(uintptr_t))) {
+
             self->found_sig_pc = 1;
-        }
-        else
-        {
+        } else {
             return _URC_NO_REASON; //skip and continue
         }
     }
     
-    if(self->frame_num > 0 && pc == self->prev_pc && sp == self->prev_sp)
+    if (self->frame_num > 0 && pc == self->prev_pc && sp == self->prev_sp)
         return _URC_END_OF_STACK; //stop
     
-    if(0 != xcc_unwind_clang_record_frame(self, pc))
+    if (0 != xcc_unwind_clang_record_frame(self, pc))
         return _URC_END_OF_STACK; //stop
     
     self->prev_pc = pc;
@@ -159,8 +148,7 @@ static _Unwind_Reason_Code xcc_unwind_clang_callback(struct _Unwind_Context* unw
     return _URC_NO_REASON; //continue
 }
 
-size_t xcc_unwind_clang_record(ucontext_t *uc, char *buf, size_t buf_len)
-{
+size_t xcc_unwind_clang_record(ucontext_t* uc, char* buf, size_t buf_len) {
     xcc_unwind_clang_t self;
 
     xcc_libc_support_memset(&self, 0, sizeof(xcc_unwind_clang_t));

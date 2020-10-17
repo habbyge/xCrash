@@ -31,28 +31,28 @@
 #include "xcd_util.h"
 #include "xcd_log.h"
 
-int xcd_map_init(xcd_map_t *self, uintptr_t start, uintptr_t end, size_t offset,
-                 const char * flags, const char *name)
-{
+int xcd_map_init(xcd_map_t *self, uintptr_t start, uintptr_t end,
+                 size_t offset, const char * flags, const char *name) {
+
     self->start  = start;
     self->end    = end;
     self->offset = offset;
     
     self->flags  = PROT_NONE;
-    if(flags[0] == 'r') self->flags |= PROT_READ;
-    if(flags[1] == 'w') self->flags |= PROT_WRITE;
-    if(flags[2] == 'x') self->flags |= PROT_EXEC;
+    if (flags[0] == 'r') self->flags |= PROT_READ;
+    if (flags[1] == 'w') self->flags |= PROT_WRITE;
+    if (flags[2] == 'x') self->flags |= PROT_EXEC;
     
-    if(NULL == name || '\0' == name[0])
-    {
+    if (NULL == name || '\0' == name[0]) {
         self->name = NULL;
-    }
-    else
-    {
-        if(0 == strncmp(name, "/dev/", 5) && 0 != strncmp(name + 5, "ashmem/", 7))
+    } else {
+        if (0 == strncmp(name, "/dev/", 5) && 0 != strncmp(name + 5, "ashmem/", 7)) {
             self->flags |= XCD_MAP_PORT_DEVICE;
+        }
         
-        if(NULL == (self->name = strdup(name))) return XCC_ERRNO_NOMEM;
+        if (NULL == (self->name = strdup(name))) {
+            return XCC_ERRNO_NOMEM;
+        }
     }
 
     self->elf = NULL;
@@ -63,24 +63,25 @@ int xcd_map_init(xcd_map_t *self, uintptr_t start, uintptr_t end, size_t offset,
     return 0;
 }
 
-void xcd_map_uninit(xcd_map_t *self)
-{
+void xcd_map_uninit(xcd_map_t *self) {
     free(self->name);
     self->name = NULL;
 }
 
-xcd_elf_t *xcd_map_get_elf(xcd_map_t *self, pid_t pid, void *maps_obj)
-{
-    xcd_memory_t *memory = NULL;
-    xcd_elf_t    *elf = NULL;
+xcd_elf_t* xcd_map_get_elf(xcd_map_t* self, pid_t pid, void *maps_obj) {
+    xcd_memory_t* memory = NULL;
+    xcd_elf_t* elf = NULL;
 
-    if(NULL == self->elf && 0 == self->elf_loaded)
-    {
+    if (NULL == self->elf && 0 == self->elf_loaded) {
         self->elf_loaded = 1;
         
-        if(0 != xcd_memory_create(&memory, self, pid, maps_obj)) return NULL;
+        if (0 != xcd_memory_create(&memory, self, pid, maps_obj)) {
+            return NULL;
+        }
 
-        if(0 != xcd_elf_create(&elf, pid, memory)) return NULL;
+        if (0 != xcd_elf_create(&elf, pid, memory)) {
+            return NULL;
+        }
         
         self->elf = elf;
     }
@@ -88,16 +89,14 @@ xcd_elf_t *xcd_map_get_elf(xcd_map_t *self, pid_t pid, void *maps_obj)
     return self->elf;
 }
 
-uintptr_t xcd_map_get_rel_pc(xcd_map_t *self, uintptr_t pc, pid_t pid, void *maps_obj)
-{
-    xcd_elf_t *elf = xcd_map_get_elf(self, pid, maps_obj);
+uintptr_t xcd_map_get_rel_pc(xcd_map_t* self, uintptr_t pc, pid_t pid, void* maps_obj) {
+    xcd_elf_t* elf = xcd_map_get_elf(self, pid, maps_obj);
     uintptr_t load_bias = (NULL == elf ? 0 : xcd_elf_get_load_bias(elf));
-    
+
     return pc - self->start + load_bias + self->elf_offset;
 }
 
-uintptr_t xcd_map_get_abs_pc(xcd_map_t *self, uintptr_t pc, pid_t pid, void *maps_obj)
-{
+uintptr_t xcd_map_get_abs_pc(xcd_map_t *self, uintptr_t pc, pid_t pid, void *maps_obj) {
     xcd_elf_t *elf = xcd_map_get_elf(self, pid, maps_obj);
     uintptr_t load_bias = (NULL == elf ? 0 : xcd_elf_get_load_bias(elf));
     

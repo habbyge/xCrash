@@ -47,7 +47,8 @@ public class MyCustomApplication extends Application {
         ICrashCallback callback = new ICrashCallback() {
             @Override
             public void onCrash(String logPath, String emergency) {
-                Log.d(TAG, "log path: " + (logPath != null ? logPath : "(null)") + ", emergency: " + (emergency != null ? emergency : "(null)"));
+                Log.d(TAG, "log path: " + (logPath != null ? logPath : "(null)")
+                        + ", emergency: " + (emergency != null ? emergency : "(null)"));
 
                 if (emergency != null) {
                     debug(logPath, emergency);
@@ -59,10 +60,8 @@ public class MyCustomApplication extends Application {
 
                     // OK
                     TombstoneManager.appendSection(logPath, "expanded_key_1", "expanded_content");
-                    TombstoneManager.appendSection(logPath, "expanded_key_2", "expanded_content_row_1\nexpanded_content_row_2");
-
-                    // Invalid. (Do NOT include multiple consecutive newline characters ("\n\n") in the content string.)
-                    // TombstoneManager.appendSection(logPath, "expanded_key_3", "expanded_content_row_1\n\nexpanded_content_row_2");
+                    TombstoneManager.appendSection(logPath, "expanded_key_2",
+                            "expanded_content_row_1\nexpanded_content_row_2");
 
                     debug(logPath, null);
                 }
@@ -81,7 +80,8 @@ public class MyCustomApplication extends Application {
             .setJavaCallback(callback)
             .setNativeRethrow(true)
             .setNativeLogCountMax(10)
-            .setNativeDumpAllThreadsWhiteList(new String[]{"^xcrash\\.sample$", "^Signal Catcher$", "^Jit thread pool$", ".*(R|r)ender.*", ".*Chrome.*"})
+            .setNativeDumpAllThreadsWhiteList(new String[]{"^xcrash\\.sample$",
+                    "^Signal Catcher$", "^Jit thread pool$", ".*(R|r)ender.*", ".*Chrome.*"})
             .setNativeDumpAllThreadsCountMax(10)
             .setNativeCallback(callback)
             .setAnrRethrow(true)

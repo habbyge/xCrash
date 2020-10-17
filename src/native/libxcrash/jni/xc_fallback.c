@@ -52,37 +52,37 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wgnu-statement-expression"
 
-static size_t xc_fallback_get_process_thread(char *buf, size_t len, pid_t tid)
-{
+static size_t xc_fallback_get_process_thread(char* buf, size_t len, pid_t tid) {
     char  tname[64];
     
     xcc_util_get_thread_name(tid, tname, sizeof(tname));
 
     return xcc_fmt_snprintf(buf, len, "pid: %d, tid: %d, name: %s  >>> %s <<<\n",
-                            xc_common_process_id, tid, tname, xc_common_process_name);
+            xc_common_process_id, tid, tname, xc_common_process_name);
 }
 
-static size_t xc_fallback_get_signal(char *buf, size_t len, siginfo_t *si)
-{
+static size_t xc_fallback_get_signal(char* buf, size_t len, siginfo_t* si) {
     //fault addr
     char addr_desc[64];
-    if(xcc_util_signal_has_si_addr(si))
+    if (xcc_util_signal_has_si_addr(si))
         xcc_fmt_snprintf(addr_desc, sizeof(addr_desc), "%p", si->si_addr);
     else
         xcc_fmt_snprintf(addr_desc, sizeof(addr_desc), "--------");
 
     //from
     char sender_desc[64] = "";
-    if(xcc_util_signal_has_sender(si, xc_common_process_id))
-        xcc_fmt_snprintf(sender_desc, sizeof(sender_desc), " from pid %d, uid %d", si->si_pid, si->si_uid);
+    if (xcc_util_signal_has_sender(si, xc_common_process_id))
+        xcc_fmt_snprintf(sender_desc, sizeof(sender_desc),
+                " from pid %d, uid %d", si->si_pid, si->si_uid);
 
-    return xcc_fmt_snprintf(buf, len, "signal %d (%s), code %d (%s%s), fault addr %s\n",
-                            si->si_signo, xcc_util_get_signame(si),
-                            si->si_code, xcc_util_get_sigcodename(si), sender_desc, addr_desc);
+    return xcc_fmt_snprintf(buf, len,
+            "signal %d (%s), code %d (%s%s), fault addr %s\n",
+            si->si_signo, xcc_util_get_signame(si),
+            si->si_code, xcc_util_get_sigcodename(si),
+            sender_desc, addr_desc);
 }
 
-static size_t xc_fallback_get_regs(char *buf, size_t len, ucontext_t *uc)
-{
+static size_t xc_fallback_get_regs(char *buf, size_t len, ucontext_t *uc) {
 #if defined(__arm__)
     return xcc_fmt_snprintf(buf, len, 
                             "    r0  %08x  r1  %08x  r2  %08x  r3  %08x\n"
@@ -190,14 +190,14 @@ static size_t xc_fallback_get_regs(char *buf, size_t len, ucontext_t *uc)
 #endif
 }
 
-static size_t xc_fallback_get_backtrace(char *buf, size_t len, siginfo_t *si, ucontext_t *uc)
-{
+static size_t xc_fallback_get_backtrace(char* buf, size_t len,
+                                        siginfo_t *si, ucontext_t *uc) {
+
     size_t used = 0;
 
     used += xcc_fmt_snprintf(buf + used, len - used, "backtrace:\n");
     used += xcc_unwind_get(xc_common_api_level, si, uc, buf + used, len - used);
-    if(used >= len - 1)
-    {
+    if(used >= len - 1) {
         buf[len - 3] = '\n';
         buf[len - 2] = '\0';
         used = len - 2;
@@ -211,8 +211,8 @@ size_t xc_fallback_get_emergency(siginfo_t *si,
                                  pid_t tid,
                                  uint64_t crash_time,
                                  char *emergency,
-                                 size_t emergency_len)
-{
+                                 size_t emergency_len) {
+
     size_t used = xcc_util_get_dump_header(emergency, emergency_len,
                                            XCC_UTIL_CRASH_TYPE_NATIVE,
                                            xc_common_time_zone,
@@ -241,8 +241,8 @@ int xc_fallback_record(int log_fd,
                        unsigned int logcat_events_lines,
                        unsigned int logcat_main_lines,
                        int dump_fds,
-                       int dump_network_info)
-{
+                       int dump_network_info) {
+
     int r;
 
     if(log_fd < 0) return XCC_ERRNO_INVAL;

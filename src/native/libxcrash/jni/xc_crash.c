@@ -102,18 +102,14 @@ static int              xc_crash_child_notifier[2];
 static xcc_spot_t       xc_crash_spot;
 static char            *xc_crash_dump_all_threads_whitelist = NULL;
 
-static int xc_crash_fork(int (*fn)(void *))
-{
+static int xc_crash_fork(int (*fn)(void *)) {
 #ifndef __i386__
     return clone(fn, xc_crash_child_stack, CLONE_VFORK | CLONE_FS | CLONE_UNTRACED, NULL);
 #else
     pid_t dumper_pid = fork();
-    if(-1 == dumper_pid)
-    {
+    if(-1 == dumper_pid) {
         return -1;
-    }
-    else if(0 == dumper_pid)
-    {
+    } else if(0 == dumper_pid) {
         //child process ...
         char msg = 'a';
         XCC_UTIL_TEMP_FAILURE_RETRY(write(xc_crash_child_notifier[1], &msg, sizeof(char)));
@@ -121,9 +117,7 @@ static int xc_crash_fork(int (*fn)(void *))
         syscall(SYS_close, xc_crash_child_notifier[1]);
 
         _exit(fn(NULL));
-    }
-    else
-    {
+    } else {
         //parent process ...
         char msg;
         XCC_UTIL_TEMP_FAILURE_RETRY(read(xc_crash_child_notifier[0], &msg, sizeof(char)));
@@ -135,9 +129,8 @@ static int xc_crash_fork(int (*fn)(void *))
 #endif
 }
 
-static int xc_crash_exec_dumper(void *arg)
-{
-    (void)arg;
+static int xc_crash_exec_dumper(void *arg) {
+    (void) arg;
 
     //for fd exhaust
     //keep the log_fd open for writing error msg before execl()
@@ -149,14 +142,17 @@ static int xc_crash_exec_dumper(void *arg)
     //hold the fd 0, 1, 2
     errno = 0;
     int devnull = XCC_UTIL_TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
-    if(devnull < 0)
-    {
-        xcc_util_write_format_safe(xc_crash_log_fd, XC_CRASH_ERR_TITLE"open /dev/null failed, errno=%d\n\n", errno);
+    if (devnull < 0) {
+        xcc_util_write_format_safe(xc_crash_log_fd,
+                XC_CRASH_ERR_TITLE"open /dev/null failed, errno=%d\n\n",
+                errno);
+
         return 90;
-    }
-    else if(0 != devnull)
-    {
-        xcc_util_write_format_safe(xc_crash_log_fd, XC_CRASH_ERR_TITLE"/dev/null fd NOT 0, errno=%d\n\n", errno);
+    } else if(0 != devnull) {
+        xcc_util_write_format_safe(xc_crash_log_fd,
+                XC_CRASH_ERR_TITLE"/dev/null fd NOT 0, errno=%d\n\n",
+                errno);
+
         return 91;
     }
     XCC_UTIL_TEMP_FAILURE_RETRY(dup2(devnull, STDOUT_FILENO));
@@ -165,9 +161,10 @@ static int xc_crash_exec_dumper(void *arg)
     //create args pipe
     int pipefd[2];
     errno = 0;
-    if(0 != pipe2(pipefd, O_CLOEXEC))
-    {
-        xcc_util_write_format_safe(xc_crash_log_fd, XC_CRASH_ERR_TITLE"create args pipe failed, errno=%d\n\n", errno);
+    if(0 != pipe2(pipefd, O_CLOEXEC)) {
+        xcc_util_write_format_safe(xc_crash_log_fd,
+                XC_CRASH_ERR_TITLE"create args pipe failed, errno=%d\n\n",
+                errno);
         return 92;
     }
 
@@ -186,9 +183,10 @@ static int xc_crash_exec_dumper(void *arg)
                           xc_crash_spot.app_version_len +
                           xc_crash_spot.dump_all_threads_whitelist_len);
     errno = 0;
-    if(fcntl(pipefd[1], F_SETPIPE_SZ, write_len) < write_len)
-    {
-        xcc_util_write_format_safe(xc_crash_log_fd, XC_CRASH_ERR_TITLE"set args pipe size failed, errno=%d\n\n", errno);
+    if(fcntl(pipefd[1], F_SETPIPE_SZ, write_len) < write_len) {
+        xcc_util_write_format_safe(xc_crash_log_fd,
+                XC_CRASH_ERR_TITLE"set args pipe size failed, errno=%d\n\n",
+                errno);
         return 93;
     }
 
@@ -210,9 +208,10 @@ static int xc_crash_exec_dumper(void *arg)
     int iovs_cnt = (0 == xc_crash_spot.dump_all_threads_whitelist_len ? 11 : 12);
     errno = 0;
     ssize_t ret = XCC_UTIL_TEMP_FAILURE_RETRY(writev(pipefd[1], iovs, iovs_cnt));
-    if((ssize_t)write_len != ret)
-    {
-        xcc_util_write_format_safe(xc_crash_log_fd, XC_CRASH_ERR_TITLE"write args to pipe failed, return=%d, errno=%d\n\n", ret, errno);
+    if((ssize_t)write_len != ret) {
+        xcc_util_write_format_safe(xc_crash_log_fd,
+                XC_CRASH_ERR_TITLE"write args to pipe failed, return=%d, errno=%d\n\n",
+                ret, errno);
         return 94;
     }
 
@@ -228,8 +227,7 @@ static int xc_crash_exec_dumper(void *arg)
     return 100 + errno;
 }
 
-static void xc_xcrash_record_java_stacktrace()
-{
+static void xc_xcrash_record_java_stacktrace() {
     JNIEnv                           *env     = NULL;
     xc_dl_t                          *libcpp  = NULL;
     xc_dl_t                          *libart  = NULL;
@@ -651,11 +649,12 @@ static void xc_crash_init_dump_all_threads_whitelist(const char **whitelist, siz
     xc_crash_dump_all_threads_whitelist = total_encoded_whitelist;
 }
 
-static void xc_crash_init_callback(JNIEnv *env)
-{
+static void xc_crash_init_callback(JNIEnv *env) {
     if(NULL == xc_common_cb_class) return;
     
-    xc_crash_cb_method = (*env)->GetStaticMethodID(env, xc_common_cb_class, XC_CRASH_CALLBACK_METHOD_NAME, XC_CRASH_CALLBACK_METHOD_SIGNATURE);
+    xc_crash_cb_method = (*env)->GetStaticMethodID(env, xc_common_cb_class,
+            XC_CRASH_CALLBACK_METHOD_NAME, XC_CRASH_CALLBACK_METHOD_SIGNATURE);
+
     XC_JNI_CHECK_NULL_AND_PENDING_EXCEPTION(xc_crash_cb_method, err);
     
     //eventfd and a new thread for callback
@@ -665,8 +664,7 @@ static void xc_crash_init_callback(JNIEnv *env)
 
  err:
     xc_crash_cb_method = NULL;
-    if(xc_crash_cb_notifier >= 0)
-    {
+    if(xc_crash_cb_notifier >= 0) {
         close(xc_crash_cb_notifier);
         xc_crash_cb_notifier = -1;
     }
@@ -684,12 +682,19 @@ int xc_crash_init(JNIEnv *env,
                   int dump_all_threads,
                   unsigned int dump_all_threads_count_max,
                   const char **dump_all_threads_whitelist,
-                  size_t dump_all_threads_whitelist_len)
-{
+                  size_t dump_all_threads_whitelist_len) {
+
     xc_crash_prepared_fd = XCC_UTIL_TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
     xc_crash_rethrow = rethrow;
-    if(NULL == (xc_crash_emergency = calloc(XC_CRASH_EMERGENCY_BUF_LEN, 1))) return XCC_ERRNO_NOMEM;
-    if(NULL == (xc_crash_dumper_pathname = xc_util_strdupcat(xc_common_app_lib_dir, "/"XCC_UTIL_XCRASH_DUMPER_FILENAME))) return XCC_ERRNO_NOMEM;
+
+    if (NULL == (xc_crash_emergency = calloc(XC_CRASH_EMERGENCY_BUF_LEN, 1)))
+        return XCC_ERRNO_NOMEM;
+
+    if (NULL == (xc_crash_dumper_pathname = xc_util_strdupcat(
+            xc_common_app_lib_dir, "/"XCC_UTIL_XCRASH_DUMPER_FILENAME))) {
+
+        return XCC_ERRNO_NOMEM;
+    }
 
     //init the local unwinder for fallback mode
     xcc_unwind_init(xc_common_api_level);

@@ -49,16 +49,16 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wgnu-statement-expression"
 
-#define XC_TRACE_CALLBACK_METHOD_NAME         "traceCallback"
-#define XC_TRACE_CALLBACK_METHOD_SIGNATURE    "(Ljava/lang/String;Ljava/lang/String;)V"
+#define XC_TRACE_CALLBACK_METHOD_NAME      "traceCallback"
+#define XC_TRACE_CALLBACK_METHOD_SIGNATURE "(Ljava/lang/String;Ljava/lang/String;)V"
 
 #define XC_TRACE_SIGNAL_CATCHER_TID_UNLOAD    (-2)
 #define XC_TRACE_SIGNAL_CATCHER_TID_UNKNOWN   (-1)
 #define XC_TRACE_SIGNAL_CATCHER_THREAD_NAME   "Signal Catcher"
 #define XC_TRACE_SIGNAL_CATCHER_THREAD_SIGBLK 0x1000
 
-static int                              xc_trace_is_lollipop = 0;
-static pid_t                            xc_trace_signal_catcher_tid = XC_TRACE_SIGNAL_CATCHER_TID_UNLOAD;
+static int xc_trace_is_lollipop = 0;
+static pid_t xc_trace_signal_catcher_tid = XC_TRACE_SIGNAL_CATCHER_TID_UNLOAD;
 
 //symbol address in libc++.so and libart.so
 static void                            *xc_trace_libcpp_cerr = NULL;
@@ -81,11 +81,10 @@ static int                              xc_trace_dump_network_info;
 static jmethodID                        xc_trace_cb_method = NULL;
 static int                              xc_trace_notifier = -1;
 
-xc_trace_dump_status_t                  xc_trace_dump_status = XC_TRACE_DUMP_NOT_START;
+xc_trace_dump_status_t xc_trace_dump_status = XC_TRACE_DUMP_NOT_START;
 sigjmp_buf                              jmpenv;
 
-static void xc_trace_load_signal_catcher_tid()
-{
+static void xc_trace_load_signal_catcher_tid() {
     char           buf[256];
     DIR           *dir;
     struct dirent *ent;
@@ -97,8 +96,7 @@ static void xc_trace_load_signal_catcher_tid()
 
     snprintf(buf, sizeof(buf), "/proc/%d/task", xc_common_process_id);
     if(NULL == (dir = opendir(buf))) return;
-    while(NULL != (ent = readdir(dir)))
-    {
+    while(NULL != (ent = readdir(dir))) {
         //get and check thread id
         if(0 != xcc_util_atoi(ent->d_name, &tid)) continue;
         if(tid < 0) continue;
@@ -111,12 +109,12 @@ static void xc_trace_load_signal_catcher_tid()
         sigblk = 0;
         snprintf(buf, sizeof(buf), "/proc/%d/status", tid);
         if(NULL == (f = fopen(buf, "r"))) break;
-        while(fgets(buf, sizeof(buf), f))
-        {
+        while(fgets(buf, sizeof(buf), f)) {
             if(1 == sscanf(buf, "SigBlk: %"SCNx64, &sigblk)) break;
         }
         fclose(f);
-        if(XC_TRACE_SIGNAL_CATCHER_THREAD_SIGBLK != sigblk) continue;
+        if (XC_TRACE_SIGNAL_CATCHER_THREAD_SIGBLK != sigblk)
+            continue;
 
         //found it
         xc_trace_signal_catcher_tid = tid;
@@ -125,17 +123,16 @@ static void xc_trace_load_signal_catcher_tid()
     closedir(dir);
 }
 
-static void xc_trace_send_sigquit()
-{
+static void xc_trace_send_sigquit() {
     if(XC_TRACE_SIGNAL_CATCHER_TID_UNLOAD == xc_trace_signal_catcher_tid)
         xc_trace_load_signal_catcher_tid();
 
     if(xc_trace_signal_catcher_tid >= 0)
-        syscall(SYS_tgkill, xc_common_process_id, xc_trace_signal_catcher_tid, SIGQUIT);
+        syscall(SYS_tgkill, xc_common_process_id,
+                xc_trace_signal_catcher_tid, SIGQUIT);
 }
 
-static int xc_trace_load_symbols()
-{
+static int xc_trace_load_symbols() {
     xc_dl_t *libcpp = NULL;
     xc_dl_t *libart = NULL;
 
@@ -144,17 +141,23 @@ static int xc_trace_load_symbols()
     xc_trace_symbols_loaded = 1;
 
     if(xc_common_api_level >= 29) libcpp = xc_dl_create(XCC_UTIL_LIBCPP_APEX);
-    if(NULL == libcpp && NULL == (libcpp = xc_dl_create(XCC_UTIL_LIBCPP))) goto end;
-    if(NULL == (xc_trace_libcpp_cerr = xc_dl_sym(libcpp, XCC_UTIL_LIBCPP_CERR))) goto end;
+    if (NULL == libcpp && NULL == (libcpp = xc_dl_create(XCC_UTIL_LIBCPP)))
+        goto end;
+    if (NULL == (xc_trace_libcpp_cerr = xc_dl_sym(libcpp, XCC_UTIL_LIBCPP_CERR)))
+        goto end;
 
-    if(xc_common_api_level >= 29) libart = xc_dl_create(XCC_UTIL_LIBART_APEX);
-    if(NULL == libart && NULL == (libart = xc_dl_create(XCC_UTIL_LIBART))) goto end;
-    if(NULL == (xc_trace_libart_runtime_instance = (void **)xc_dl_sym(libart, XCC_UTIL_LIBART_RUNTIME_INSTANCE))) goto end;
-    if(NULL == (xc_trace_libart_runtime_dump = (xcc_util_libart_runtime_dump_t)xc_dl_sym(libart, XCC_UTIL_LIBART_RUNTIME_DUMP))) goto end;
-    if(xc_trace_is_lollipop)
-    {
-        if(NULL == (xc_trace_libart_dbg_suspend = (xcc_util_libart_dbg_suspend_t)xc_dl_sym(libart, XCC_UTIL_LIBART_DBG_SUSPEND))) goto end;
-        if(NULL == (xc_trace_libart_dbg_resume = (xcc_util_libart_dbg_resume_t)xc_dl_sym(libart, XCC_UTIL_LIBART_DBG_RESUME))) goto end;
+    if (xc_common_api_level >= 29) libart = xc_dl_create(XCC_UTIL_LIBART_APEX);
+    if (NULL == libart && NULL == (libart = xc_dl_create(XCC_UTIL_LIBART)))
+        goto end;
+    if (NULL == (xc_trace_libart_runtime_instance = (void **)
+        xc_dl_sym(libart, XCC_UTIL_LIBART_RUNTIME_INSTANCE))) goto end;
+    if (NULL == (xc_trace_libart_runtime_dump = (xcc_util_libart_runtime_dump_t)
+        xc_dl_sym(libart, XCC_UTIL_LIBART_RUNTIME_DUMP))) goto end;
+    if (xc_trace_is_lollipop) {
+        if (NULL == (xc_trace_libart_dbg_suspend = (xcc_util_libart_dbg_suspend_t)
+            xc_dl_sym(libart, XCC_UTIL_LIBART_DBG_SUSPEND))) goto end;
+        if (NULL == (xc_trace_libart_dbg_resume = (xcc_util_libart_dbg_resume_t)
+            xc_dl_sym(libart, XCC_UTIL_LIBART_DBG_RESUME))) goto end;
     }
 
     //OK
@@ -167,9 +170,8 @@ static int xc_trace_load_symbols()
 }
 
 //Not reliable! But try our best to avoid crashes.
-static int xc_trace_check_address_valid()
-{
-    FILE      *f = NULL;
+static int xc_trace_check_address_valid() {
+    FILE*      f = NULL;
     char       line[512];
     uintptr_t  start, end;
     int        r_cerr = XCC_ERRNO_INVAL;
@@ -179,44 +181,72 @@ static int xc_trace_check_address_valid()
     int        r_dbg_resume = XCC_ERRNO_INVAL;
     int        r = XCC_ERRNO_INVAL;
 
-    if(NULL == (f = fopen("/proc/self/maps", "r"))) return XCC_ERRNO_SYS;
+    if (NULL == (f = fopen("/proc/self/maps", "r"))) {
+        return XCC_ERRNO_SYS;
+    }
     
-    while(fgets(line, sizeof(line), f))
-    {
-        if(2 != sscanf(line, "%"SCNxPTR"-%"SCNxPTR" r", &start, &end)) continue;
+    while(fgets(line, sizeof(line), f)) {
+        if (2 != sscanf(line, "%"SCNxPTR"-%"SCNxPTR" r", &start, &end))
+            continue;
         
-        if(0 != r_cerr && (uintptr_t)xc_trace_libcpp_cerr >= start && (uintptr_t)xc_trace_libcpp_cerr < end)
+        if (0 != r_cerr
+                && (uintptr_t)xc_trace_libcpp_cerr >= start
+                && (uintptr_t)xc_trace_libcpp_cerr < end) {
+
             r_cerr = 0;
-        if(0 != r_runtime_instance && (uintptr_t)xc_trace_libart_runtime_instance >= start && (uintptr_t)xc_trace_libart_runtime_instance < end)
+        }
+
+        if (0 != r_runtime_instance
+                && (uintptr_t)xc_trace_libart_runtime_instance >= start
+                && (uintptr_t)xc_trace_libart_runtime_instance < end) {
+
             r_runtime_instance = 0;
-        if(0 != r_runtime_dump && (uintptr_t)xc_trace_libart_runtime_dump >= start && (uintptr_t)xc_trace_libart_runtime_dump < end)
+        }
+
+        if (0 != r_runtime_dump
+                && (uintptr_t)xc_trace_libart_runtime_dump >= start
+                && (uintptr_t)xc_trace_libart_runtime_dump < end) {
+
             r_runtime_dump = 0;
-        if(xc_trace_is_lollipop)
-        {
-            if(0 != r_dbg_suspend && (uintptr_t)xc_trace_libart_dbg_suspend >= start && (uintptr_t)xc_trace_libart_dbg_suspend < end)
+        }
+
+        if (xc_trace_is_lollipop) {
+            if (0 != r_dbg_suspend
+                    && (uintptr_t)xc_trace_libart_dbg_suspend >= start
+                    && (uintptr_t)xc_trace_libart_dbg_suspend < end) {
+
                 r_dbg_suspend = 0;
-            if(0 != r_dbg_resume && (uintptr_t)xc_trace_libart_dbg_resume >= start && (uintptr_t)xc_trace_libart_dbg_resume < end)
+            }
+
+            if (0 != r_dbg_resume
+                    && (uintptr_t)xc_trace_libart_dbg_resume >= start
+                    && (uintptr_t)xc_trace_libart_dbg_resume < end) {
+
                 r_dbg_resume = 0;
+            }
         }
         
-        if(0 == r_cerr && 0 == r_runtime_instance && 0 == r_runtime_dump &&
-           (!xc_trace_is_lollipop || (0 == r_dbg_suspend && 0 == r_dbg_resume)))
-        {
+        if (0 == r_cerr && 0 == r_runtime_instance && 0 == r_runtime_dump &&
+                (!xc_trace_is_lollipop
+                || (0 == r_dbg_suspend && 0 == r_dbg_resume))) {
+
             r = 0;
             break;
         }
     }
-    if(0 != r) goto end;
+
+    if (0 != r)
+        goto end;
 
     r = XCC_ERRNO_INVAL;
     rewind(f);
-    while(fgets(line, sizeof(line), f))
-    {
-        if(2 != sscanf(line, "%"SCNxPTR"-%"SCNxPTR" r", &start, &end)) continue;
+    while(fgets(line, sizeof(line), f)) {
+        if (2 != sscanf(line, "%"SCNxPTR"-%"SCNxPTR" r", &start, &end))
+            continue;
 
         //The next line of code will cause segmentation fault, sometimes.
-        if((uintptr_t)(*xc_trace_libart_runtime_instance) >= start && (uintptr_t)(*xc_trace_libart_runtime_instance) < end)
-        {
+        if ((uintptr_t)(*xc_trace_libart_runtime_instance) >= start
+                && (uintptr_t)(*xc_trace_libart_runtime_instance) < end) {
             r = 0;
             break;
         }
@@ -227,39 +257,45 @@ static int xc_trace_check_address_valid()
     return r;
 }
 
-static int xc_trace_logs_filter(const struct dirent *entry)
-{
+static int xc_trace_logs_filter(const struct dirent* entry) {
     size_t len;
     
     if(DT_REG != entry->d_type) return 0;
 
     len = strlen(entry->d_name);
-    if(len < XC_COMMON_LOG_NAME_MIN_TRACE) return 0;
+    if (len < XC_COMMON_LOG_NAME_MIN_TRACE)
+        return 0;
     
-    if(0 != memcmp(entry->d_name, XC_COMMON_LOG_PREFIX"_", XC_COMMON_LOG_PREFIX_LEN + 1)) return 0;
-    if(0 != memcmp(entry->d_name + (len - XC_COMMON_LOG_SUFFIX_TRACE_LEN), XC_COMMON_LOG_SUFFIX_TRACE, XC_COMMON_LOG_SUFFIX_TRACE_LEN)) return 0;
+    if (0 != memcmp(entry->d_name, XC_COMMON_LOG_PREFIX"_",
+            XC_COMMON_LOG_PREFIX_LEN + 1))
+        return 0;
+    if (0 != memcmp(entry->d_name + (len - XC_COMMON_LOG_SUFFIX_TRACE_LEN),
+            XC_COMMON_LOG_SUFFIX_TRACE, XC_COMMON_LOG_SUFFIX_TRACE_LEN))
+        return 0;
 
     return 1;
 }
 
-static int xc_trace_logs_clean(void)
-{
+static int xc_trace_logs_clean(void) {
     struct dirent **entry_list;
     char            pathname[1024];
     int             n, i, r = 0;
 
-    if(0 > (n = scandir(xc_common_log_dir, &entry_list, xc_trace_logs_filter, alphasort))) return XCC_ERRNO_SYS;
-    for(i = 0; i < n; i++)
-    {
-        snprintf(pathname, sizeof(pathname), "%s/%s", xc_common_log_dir, entry_list[i]->d_name);
+    if (0 > (n = scandir(xc_common_log_dir, &entry_list,
+            xc_trace_logs_filter, alphasort)))
+        return XCC_ERRNO_SYS;
+
+    for(i = 0; i < n; i++) {
+        snprintf(pathname, sizeof(pathname), "%s/%s",
+                xc_common_log_dir, entry_list[i]->d_name);
+
         if(0 != unlink(pathname)) r = XCC_ERRNO_SYS;
     }
     free(entry_list);
     return r;
 }
 
-static int xc_trace_write_header(int fd, uint64_t trace_time)
-{
+static int xc_trace_write_header(int fd, uint64_t trace_time) {
     int  r;
     char buf[1024];
     
@@ -280,11 +316,11 @@ static int xc_trace_write_header(int fd, uint64_t trace_time)
                              xc_common_build_fingerprint);
     if(0 != (r = xcc_util_write_str(fd, buf))) return r;
     
-    return xcc_util_write_format(fd, "pid: %d  >>> %s <<<\n\n", xc_common_process_id, xc_common_process_name);
+    return xcc_util_write_format(fd, "pid: %d  >>> %s <<<\n\n",
+            xc_common_process_id, xc_common_process_name);
 }
 
-static void *xc_trace_dumper(void *arg)
-{
+static void *xc_trace_dumper(void *arg) {
     JNIEnv         *env = NULL;
     uint64_t        data;
     uint64_t        trace_time;
@@ -302,10 +338,12 @@ static void *xc_trace_dumper(void *arg)
         .name    = "xcrash_trace_dp",
         .group   = NULL
     };
-    if(JNI_OK != (*xc_common_vm)->AttachCurrentThread(xc_common_vm, &env, &attach_args)) goto exit;
 
-    while(1)
-    {
+    if (JNI_OK != (*xc_common_vm)->AttachCurrentThread(
+            xc_common_vm, &env, &attach_args))
+        goto exit;
+
+    while(1) {
         //block here, waiting for sigquit
         XCC_UTIL_TEMP_FAILURE_RETRY(read(xc_trace_notifier, &data, sizeof(data)));
         
@@ -320,41 +358,45 @@ static void *xc_trace_dumper(void *arg)
         if(0 != xc_trace_logs_clean()) continue;
 
         //create and open log file
-        if((fd = xc_common_open_trace_log(pathname, sizeof(pathname), trace_time)) < 0) continue;
+        if((fd = xc_common_open_trace_log(pathname,
+                sizeof(pathname), trace_time)) < 0)
+            continue;
 
         //write header info
         if(0 != xc_trace_write_header(fd, trace_time)) goto end;
 
         //write trace info from ART runtime
-        if(0 != xcc_util_write_format(fd, XCC_UTIL_THREAD_SEP"Cmd line: %s\n", xc_common_process_name)) goto end;
+        if(0 != xcc_util_write_format(fd,
+                XCC_UTIL_THREAD_SEP"Cmd line: %s\n", xc_common_process_name))
+            goto end;
+
         if(0 != xcc_util_write_str(fd, "Mode: ART DumpForSigQuit\n")) goto end;
-        if(0 != xc_trace_load_symbols())
-        {
+        if(0 != xc_trace_load_symbols()) {
             if(0 != xcc_util_write_str(fd, "Failed to load symbols.\n")) goto end;
             goto skip;
         }
-        if(0 != xc_trace_check_address_valid())
-        {
-            if(0 != xcc_util_write_str(fd, "Failed to check runtime address.\n")) goto end;
+        if(0 != xc_trace_check_address_valid()) {
+            if(0 != xcc_util_write_str(fd, "Failed to check runtime address.\n"))
+                goto end;
             goto skip;
         }
-        if(dup2(fd, STDERR_FILENO) < 0)
-        {
+        if(dup2(fd, STDERR_FILENO) < 0) {
             if(0 != xcc_util_write_str(fd, "Failed to duplicate FD.\n")) goto end;
             goto skip;
         }
 
         xc_trace_dump_status = XC_TRACE_DUMP_ON_GOING;
-        if(sigsetjmp(jmpenv, 1) == 0) 
-        {
+        if(sigsetjmp(jmpenv, 1) == 0) {
             if(xc_trace_is_lollipop)
                 xc_trace_libart_dbg_suspend();
-            xc_trace_libart_runtime_dump(*xc_trace_libart_runtime_instance, xc_trace_libcpp_cerr);
+
+            xc_trace_libart_runtime_dump(
+                    *xc_trace_libart_runtime_instance,
+                    xc_trace_libcpp_cerr);
+
             if(xc_trace_is_lollipop)
                 xc_trace_libart_dbg_resume();
-        } 
-        else 
-        {
+        } else {
             fflush(NULL);
             XCD_LOG_WARN("longjmp to skip dumping trace\n");
         }
@@ -365,26 +407,35 @@ static void *xc_trace_dumper(void *arg)
         if(0 != xcc_util_write_str(fd, "\n"XCC_UTIL_THREAD_END"\n")) goto end;
 
         //write other info
-        if(0 != xcc_util_record_logcat(fd, xc_common_process_id, xc_common_api_level, xc_trace_logcat_system_lines, xc_trace_logcat_events_lines, xc_trace_logcat_main_lines)) goto end;
+        if(0 != xcc_util_record_logcat(fd, xc_common_process_id,
+                xc_common_api_level, xc_trace_logcat_system_lines,
+                xc_trace_logcat_events_lines, xc_trace_logcat_main_lines))
+            goto end;
+
         if(xc_trace_dump_fds)
             if(0 != xcc_util_record_fds(fd, xc_common_process_id)) goto end;
         if(xc_trace_dump_network_info)
-            if(0 != xcc_util_record_network_info(fd, xc_common_process_id, xc_common_api_level)) goto end;
-        if(0 != xcc_meminfo_record(fd, xc_common_process_id)) goto end;
+            if (0 != xcc_util_record_network_info(fd,
+                    xc_common_process_id, xc_common_api_level))
+                goto end;
+        if (0 != xcc_meminfo_record(fd, xc_common_process_id)) goto end;
 
     end:
         //close log file
         xc_common_close_trace_log(fd);
 
         //rethrow SIGQUIT to ART Signal Catcher
-        if(xc_trace_rethrow && (XC_TRACE_DUMP_ART_CRASH != xc_trace_dump_status)) xc_trace_send_sigquit();
+        if (xc_trace_rethrow && (XC_TRACE_DUMP_ART_CRASH != xc_trace_dump_status))
+            xc_trace_send_sigquit();
         xc_trace_dump_status = XC_TRACE_DUMP_END;
 
         //JNI callback
         //Do we need to implement an emergency buffer for disk exhausted?
         if(NULL == xc_trace_cb_method) continue;
         if(NULL == (j_pathname = (*env)->NewStringUTF(env, pathname))) continue;
-        (*env)->CallStaticVoidMethod(env, xc_common_cb_class, xc_trace_cb_method, j_pathname, NULL);
+
+        (*env)->CallStaticVoidMethod(env, xc_common_cb_class,
+                xc_trace_cb_method, j_pathname, NULL);
         XC_JNI_IGNORE_PENDING_EXCEPTION();
         (*env)->DeleteLocalRef(env, j_pathname);
     }
@@ -397,26 +448,26 @@ static void *xc_trace_dumper(void *arg)
     return NULL;
 }
 
-static void xc_trace_handler(int sig, siginfo_t *si, void *uc)
-{
+static void xc_trace_handler(int sig, siginfo_t *si, void *uc) {
     uint64_t data;
     
     (void)sig;
     (void)si;
     (void)uc;
 
-    if(xc_trace_notifier >= 0)
-    {
+    if(xc_trace_notifier >= 0) {
         data = 1;
         XCC_UTIL_TEMP_FAILURE_RETRY(write(xc_trace_notifier, &data, sizeof(data)));
     }
 }
 
-static void xc_trace_init_callback(JNIEnv *env)
-{
+static void xc_trace_init_callback(JNIEnv *env) {
     if(NULL == xc_common_cb_class) return;
     
-    xc_trace_cb_method = (*env)->GetStaticMethodID(env, xc_common_cb_class, XC_TRACE_CALLBACK_METHOD_NAME, XC_TRACE_CALLBACK_METHOD_SIGNATURE);
+    xc_trace_cb_method = (*env)->GetStaticMethodID(env,
+            xc_common_cb_class, XC_TRACE_CALLBACK_METHOD_NAME,
+            XC_TRACE_CALLBACK_METHOD_SIGNATURE);
+
     XC_JNI_CHECK_NULL_AND_PENDING_EXCEPTION(xc_trace_cb_method, err);
     return;
 
@@ -430,8 +481,8 @@ int xc_trace_init(JNIEnv *env,
                   unsigned int logcat_events_lines,
                   unsigned int logcat_main_lines,
                   int dump_fds,
-                  int dump_network_info)
-{
+                  int dump_network_info) {
+
     int r;
     pthread_t thd;
 
@@ -439,7 +490,8 @@ int xc_trace_init(JNIEnv *env,
     if(xc_common_api_level < 21) return 0;
 
     //is Android Lollipop (5.x)?
-    xc_trace_is_lollipop = ((21 == xc_common_api_level || 22 == xc_common_api_level) ? 1 : 0);
+    xc_trace_is_lollipop = ((21 == xc_common_api_level
+            || 22 == xc_common_api_level) ? 1 : 0);
 
     xc_trace_dump_status = XC_TRACE_DUMP_NOT_START;
     xc_trace_rethrow = rethrow;

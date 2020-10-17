@@ -41,8 +41,7 @@
 #pragma clang diagnostic ignored "-Wpadded"
 #pragma clang diagnostic ignored "-Wgnu-statement-expression"
 
-typedef struct xc_dl_symbols
-{
+typedef struct xc_dl_symbols {
     size_t sym_offset;
     size_t sym_end;
     size_t sym_entry_size;
@@ -52,8 +51,7 @@ typedef struct xc_dl_symbols
 } xc_dl_symbols_t;
 typedef TAILQ_HEAD(xc_dl_symbols_queue, xc_dl_symbols,) xc_dl_symbols_queue_t;
 
-struct xc_dl
-{
+struct xc_dl {
     uintptr_t              map_start;
     int                    fd;
     uint8_t               *data;
@@ -62,8 +60,7 @@ struct xc_dl
     xc_dl_symbols_queue_t  symbolsq;
 };
 
-static int xc_dl_find_map_start(xc_dl_t *self, const char *pathname)
-{
+static int xc_dl_find_map_start(xc_dl_t *self, const char *pathname) {
     FILE      *f = NULL;
     char       line[512];
     uintptr_t  offset;
@@ -192,8 +189,7 @@ xc_dl_t *xc_dl_create(const char *pathname)
     return NULL;
 }
 
-void xc_dl_destroy(xc_dl_t **self)
-{
+void xc_dl_destroy(xc_dl_t **self) {
     xc_dl_symbols_t *symbols, *symbols_tmp;
     
     if(NULL == self || NULL == *self) return;
@@ -202,8 +198,7 @@ void xc_dl_destroy(xc_dl_t **self)
     
     if((*self)->fd >= 0) close((*self)->fd);
     
-    TAILQ_FOREACH_SAFE(symbols, &((*self)->symbolsq), link, symbols_tmp)
-    {
+    TAILQ_FOREACH_SAFE(symbols, &((*self)->symbolsq), link, symbols_tmp) {
         TAILQ_REMOVE(&((*self)->symbolsq), symbols, link);
         free(symbols);
     }
@@ -212,25 +207,25 @@ void xc_dl_destroy(xc_dl_t **self)
     *self = NULL;
 }
 
-void *xc_dl_sym(xc_dl_t *self, const char *symbol)
-{
+void* xc_dl_sym(xc_dl_t* self, const char* symbol) {
     xc_dl_symbols_t *symbols;
     ElfW(Sym)       *sym;
     size_t           offset, str_offset;
     char            *str;
 
-    TAILQ_FOREACH(symbols, &(self->symbolsq), link)
-    {
-        for(offset = symbols->sym_offset; offset < symbols->sym_end; offset += symbols->sym_entry_size)
-        {
+    TAILQ_FOREACH(symbols, &(self->symbolsq), link) {
+        for(offset = symbols->sym_offset; offset < symbols->sym_end;
+                offset += symbols->sym_entry_size) {
+
             //read .symtab / .dynsym
-            if(NULL == (sym = xc_dl_file_get(self, offset, sizeof(ElfW(Sym))))) break;
-            if(SHN_UNDEF == sym->st_shndx) continue;
+            if (NULL == (sym = xc_dl_file_get(self, offset, sizeof(ElfW(Sym)))))
+                break;
+            if (SHN_UNDEF == sym->st_shndx) continue;
 
             //read .strtab / .dynstr
             str_offset = symbols->str_offset + sym->st_name;
-            if(str_offset >= symbols->str_end) continue;
-            if(NULL == (str = xc_dl_file_get_string(self, str_offset))) continue;
+            if (str_offset >= symbols->str_end) continue;
+            if (NULL == (str = xc_dl_file_get_string(self, str_offset))) continue;
 
             //compare symbol name
             if(0 != strcmp(symbol, str)) continue;
