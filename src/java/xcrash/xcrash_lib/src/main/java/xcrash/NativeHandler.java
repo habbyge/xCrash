@@ -32,7 +32,6 @@ import java.util.Map;
 
 @SuppressLint("StaticFieldLeak")
 class NativeHandler {
-
     private static final NativeHandler instance = new NativeHandler();
     private long anrTimeoutMs = 15 * 1000;
 
@@ -79,7 +78,8 @@ class NativeHandler {
                    boolean anrDumpFds,
                    boolean anrDumpNetworkInfo,
                    ICrashCallback anrCallback) {
-        //load lib
+
+        // load lib
         if (libLoader == null) {
             try {
                 System.loadLibrary("xcrash");

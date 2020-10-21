@@ -48,14 +48,15 @@ typedef struct {
  * 要想拦截 Native Crash，根本上是拦截C/C++层的Crash Signal(与Crash有关的信号字)
  */
 static xcc_signal_crash_info_t xcc_signal_crash_info[] = {
-    {.signum = SIGABRT},
-    {.signum = SIGBUS},
-    {.signum = SIGFPE},
-    {.signum = SIGILL},
-    {.signum = SIGSEGV},
-    {.signum = SIGTRAP},
-    {.signum = SIGSYS},
-    {.signum = SIGSTKFLT}
+    // 调用abort()/kill()/tkill()/tgkill()自杀，或被其他进程通过kill()/tkill()/tgkill()他杀
+    {.signum = SIGABRT},  // (用户态进程发出的)
+    {.signum = SIGBUS},   // 错误的物理设备地址访问(kernel发出的信号)
+    {.signum = SIGFPE},   // 除数为零(kernel发出的信号)
+    {.signum = SIGILL},   // 无法识别的 CPU 指令(kernel发出的信号)
+    {.signum = SIGSEGV},  // 错误的虚拟内存地址访问(kernel发出的信号)
+    {.signum = SIGTRAP},  //
+    {.signum = SIGSYS},   // 无法识别的系统调用(system call)(kernel发出的信号)
+    {.signum = SIGSTKFLT} //
 };
 
 // 注册Crash信号字处理函数
@@ -127,10 +128,10 @@ int xcc_signal_crash_queue(siginfo_t* si) {
     return 0;
 }
 
-static sigset_t         xcc_signal_trace_oldset;
+static sigset_t xcc_signal_trace_oldset;
 static struct sigaction xcc_signal_trace_oldact;
 
-int xcc_signal_trace_register(void (*handler)(int, siginfo_t*, void*)) {
+int xcc_signal_trace_register(void (*handler) (int, siginfo_t*, void*)) {
     int              r;
     sigset_t         set;
     struct sigaction act;

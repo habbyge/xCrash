@@ -1,4 +1,4 @@
 #!/bin/bash
 
-ndk-build -C ./libxcrash/jni
-ndk-build -C ./libxcrash_dumper/jni
+/Users/habbyge/Library/Android/sdk/ndk-bundle/ndk-build -C ./libxcrash/jni
+/Users/habbyge/Library/Android/sdk/ndk-bundle/ndk-build -C ./libxcrash_dumper/jni

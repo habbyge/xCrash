@@ -117,25 +117,25 @@ static jint xc_jni_init(JNIEnv*       env,
         return XCC_ERRNO_INVAL;
     }
 
-    if (NULL == (c_os_version        = (*env)->GetStringUTFChars(env, os_version, 0)))
+    if (NULL == (c_os_version = (*env)->GetStringUTFChars(env, os_version, 0)))
         goto clean;
-    if (NULL == (c_abi_list          = (*env)->GetStringUTFChars(env, abi_list, 0)))
+    if (NULL == (c_abi_list = (*env)->GetStringUTFChars(env, abi_list, 0)))
         goto clean;
-    if (NULL == (c_manufacturer      = (*env)->GetStringUTFChars(env, manufacturer, 0)))
+    if (NULL == (c_manufacturer = (*env)->GetStringUTFChars(env, manufacturer, 0)))
         goto clean;
-    if (NULL == (c_brand             = (*env)->GetStringUTFChars(env, brand, 0)))
+    if (NULL == (c_brand = (*env)->GetStringUTFChars(env, brand, 0)))
         goto clean;
-    if (NULL == (c_model             = (*env)->GetStringUTFChars(env, model, 0)))
+    if (NULL == (c_model = (*env)->GetStringUTFChars(env, model, 0)))
         goto clean;
     if (NULL == (c_build_fingerprint = (*env)->GetStringUTFChars(env, build_fingerprint, 0)))
         goto clean;
-    if (NULL == (c_app_id            = (*env)->GetStringUTFChars(env, app_id, 0)))
+    if (NULL == (c_app_id = (*env)->GetStringUTFChars(env, app_id, 0)))
         goto clean;
-    if (NULL == (c_app_version       = (*env)->GetStringUTFChars(env, app_version, 0)))
+    if (NULL == (c_app_version = (*env)->GetStringUTFChars(env, app_version, 0)))
         goto clean;
-    if (NULL == (c_app_lib_dir       = (*env)->GetStringUTFChars(env, app_lib_dir, 0)))
+    if (NULL == (c_app_lib_dir = (*env)->GetStringUTFChars(env, app_lib_dir, 0)))
         goto clean;
-    if (NULL == (c_log_dir           = (*env)->GetStringUTFChars(env, log_dir, 0)))
+    if (NULL == (c_log_dir = (*env)->GetStringUTFChars(env, log_dir, 0)))
         goto clean;
 
     //common init
