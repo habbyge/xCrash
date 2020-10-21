@@ -49,6 +49,7 @@ typedef struct xc_dl_symbols {
     size_t str_end;
     TAILQ_ENTRY(xc_dl_symbols,) link;
 } xc_dl_symbols_t;
+
 typedef TAILQ_HEAD(xc_dl_symbols_queue, xc_dl_symbols,) xc_dl_symbols_queue_t;
 
 struct xc_dl {
@@ -69,12 +70,17 @@ static int xc_dl_find_map_start(xc_dl_t *self, const char *pathname) {
     int        r = XCC_ERRNO_NOTFND;
 
     if(NULL == (f = fopen("/proc/self/maps", "r"))) return XCC_ERRNO_SYS;
-    while(fgets(line, sizeof(line), f))
-    {
-        if(2 != sscanf(line, "%"SCNxPTR"-%*"SCNxPTR" %*4s %"SCNxPTR" %*x:%*x %*d%n", &(self->map_start), &offset, &pos)) continue;
+    while(fgets(line, sizeof(line), f)) {
+        if (2 != sscanf(line, "%"SCNxPTR"-%*"SCNxPTR" %*4s %"SCNxPTR" %*x:%*x %*d%n",
+                &(self->map_start), &offset, &pos)) {
+
+            continue;
+        }
+
         if(0 != offset) continue;
         p = xcc_util_trim(line + pos);
-        if(0 != strcmp(p, pathname)) continue;
+        if (0 != strcmp(p, pathname))
+            continue;
 
         r = 0; //found
         break;
@@ -84,35 +90,37 @@ static int xc_dl_find_map_start(xc_dl_t *self, const char *pathname) {
     return r;
 }
 
-static int xc_dl_file_open(xc_dl_t *self, const char *pathname)
-{
+static int xc_dl_file_open(xc_dl_t* self, const char* pathname) {
     struct stat st;
 
     //open file
-    if(0 > (self->fd = XCC_UTIL_TEMP_FAILURE_RETRY(open(pathname, O_RDONLY | O_CLOEXEC)))) return XCC_ERRNO_SYS;
+    if (0 > (self->fd = XCC_UTIL_TEMP_FAILURE_RETRY(open(pathname, O_RDONLY | O_CLOEXEC))))
+        return XCC_ERRNO_SYS;
 
     //get file size
     if(0 != fstat(self->fd, &st) || 0 == st.st_size) return XCC_ERRNO_SYS;
     self->size = (size_t)st.st_size;
 
     //mmap the file
-    if(MAP_FAILED == (self->data = (uint8_t *)mmap(NULL, self->size, PROT_READ, MAP_PRIVATE, self->fd, 0))) return XCC_ERRNO_SYS;
+    if (MAP_FAILED == (self->data = (uint8_t*) mmap(NULL,
+            self->size, PROT_READ, MAP_PRIVATE, self->fd, 0))) {
+
+        return XCC_ERRNO_SYS;
+    }
     
     return 0;
 }
 
-static void *xc_dl_file_get(xc_dl_t *self, uintptr_t offset, size_t size)
-{
-    if(offset + size > self->size) return NULL;
-    return (void *)(self->data + offset);
+static void* xc_dl_file_get(xc_dl_t* self, uintptr_t offset, size_t size) {
+    if (offset + size > self->size)
+        return NULL;
+    return (void*) (self->data + offset);
 }
 
-static char *xc_dl_file_get_string(xc_dl_t *self, uintptr_t offset)
-{
-    uint8_t *p = self->data + offset;
+static char *xc_dl_file_get_string(xc_dl_t* self, uintptr_t offset) {
+    uint8_t* p = self->data + offset;
     
-    while(p < self->data + self->size)
-    {
+    while(p < self->data + self->size) {
         if('\0' == *p) return (char *)(self->data + offset);
         p++;
     }
@@ -120,8 +128,7 @@ static char *xc_dl_file_get_string(xc_dl_t *self, uintptr_t offset)
     return NULL;
 }
 
-static int xc_dl_parse_elf(xc_dl_t *self)
-{
+static int xc_dl_parse_elf(xc_dl_t* self) {
     ElfW(Ehdr)      *ehdr;
     ElfW(Phdr)      *phdr;
     ElfW(Shdr)      *shdr, *str_shdr;
@@ -129,32 +136,40 @@ static int xc_dl_parse_elf(xc_dl_t *self)
     size_t           i, cnt = 0;
     
     //get ELF header
-    if(NULL == (ehdr = xc_dl_file_get(self, 0, sizeof(ElfW(Ehdr))))) return XCC_ERRNO_FORMAT;
+    if (NULL == (ehdr = xc_dl_file_get(self, 0, sizeof(ElfW(Ehdr)))))
+        return XCC_ERRNO_FORMAT;
 
     //find load_bias in program headers
-    for(i = 0; i < ehdr->e_phnum * ehdr->e_phentsize; i += ehdr->e_phentsize)
-    {
-        if(NULL == (phdr = xc_dl_file_get(self, ehdr->e_phoff + i, sizeof(ElfW(Phdr))))) return XCC_ERRNO_FORMAT;
+    for (i = 0; i < ehdr->e_phnum * ehdr->e_phentsize; i += ehdr->e_phentsize) {
+        if (NULL == (phdr = xc_dl_file_get(self, ehdr->e_phoff + i, sizeof(ElfW(Phdr)))))
+            return XCC_ERRNO_FORMAT;
 
-        if((PT_LOAD == phdr->p_type) && (phdr->p_flags & PF_X) && (0 == phdr->p_offset))
-        {
+        if ((PT_LOAD == phdr->p_type) && (phdr->p_flags & PF_X) && (0 == phdr->p_offset)) {
             self->load_bias = phdr->p_vaddr;
             break;
         }
     }
 
     //find symbol tables in section headers
-    for(i = ehdr->e_shentsize; i < ehdr->e_shnum * ehdr->e_shentsize; i += ehdr->e_shentsize)
-    {
-        if(NULL == (shdr = xc_dl_file_get(self, ehdr->e_shoff + i, sizeof(ElfW(Shdr))))) return XCC_ERRNO_FORMAT;
+    for(i = ehdr->e_shentsize; i < ehdr->e_shnum * ehdr->e_shentsize; i += ehdr->e_shentsize) {
+        if (NULL == (shdr = xc_dl_file_get(self, ehdr->e_shoff + i, sizeof(ElfW(Shdr)))))
+            return XCC_ERRNO_FORMAT;
 
-        if(SHT_SYMTAB == shdr->sh_type || SHT_DYNSYM == shdr->sh_type)
-        {
-            if(shdr->sh_link >= ehdr->e_shnum) continue;
-            if(NULL == (str_shdr = xc_dl_file_get(self, ehdr->e_shoff + shdr->sh_link * ehdr->e_shentsize, sizeof(ElfW(Shdr))))) return XCC_ERRNO_FORMAT;
-            if(SHT_STRTAB != str_shdr->sh_type) continue;
+        if(SHT_SYMTAB == shdr->sh_type || SHT_DYNSYM == shdr->sh_type) {
+            if (shdr->sh_link >= ehdr->e_shnum)
+                continue;
+            if (NULL == (str_shdr = xc_dl_file_get(self,
+                    ehdr->e_shoff + shdr->sh_link * ehdr->e_shentsize,
+                    sizeof(ElfW(Shdr))))) {
+
+                return XCC_ERRNO_FORMAT;
+            }
+            if (SHT_STRTAB != str_shdr->sh_type) {
+                continue;
+            }
             
-            if(NULL == (symbols = malloc(sizeof(xc_dl_symbols_t)))) return XCC_ERRNO_NOMEM;
+            if (NULL == (symbols = malloc(sizeof(xc_dl_symbols_t))))
+                return XCC_ERRNO_NOMEM;
             symbols->sym_offset = shdr->sh_offset;
             symbols->sym_end = shdr->sh_offset + shdr->sh_size;
             symbols->sym_entry_size = shdr->sh_entsize;
@@ -164,16 +179,16 @@ static int xc_dl_parse_elf(xc_dl_t *self)
             cnt++;
         }
     }
-    if(0 == cnt) return XCC_ERRNO_FORMAT;
+    if (0 == cnt)
+        return XCC_ERRNO_FORMAT;
 
     return 0;
 }
 
-xc_dl_t *xc_dl_create(const char *pathname)
-{
-    xc_dl_t *self;
+xc_dl_t *xc_dl_create(const char* pathname) {
+    xc_dl_t* self;
 
-    if(NULL == (self = calloc(1, sizeof(xc_dl_t)))) return NULL;
+    if (NULL == (self = calloc(1, sizeof(xc_dl_t)))) return NULL;
     self->fd = -1;
     self->data = MAP_FAILED;
     TAILQ_INIT(&(self->symbolsq));
