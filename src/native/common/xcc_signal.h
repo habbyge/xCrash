@@ -32,12 +32,12 @@
 extern "C" {
 #endif
 
-int xcc_signal_crash_register(void (*handler)(int, siginfo_t *, void *));
+int xcc_signal_crash_register(void (*handler)(int, siginfo_t*, void*));
 int xcc_signal_crash_unregister(void);
 int xcc_signal_crash_ignore(void);
 int xcc_signal_crash_queue(siginfo_t* si);
 
-int xcc_signal_trace_register(void (*handler)(int, siginfo_t *, void *));
+int xcc_signal_trace_register(void (*handler)(int, siginfo_t*, void*));
 void xcc_signal_trace_unregister(void);
 
 #ifdef __cplusplus

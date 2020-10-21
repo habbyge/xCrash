@@ -42,6 +42,7 @@ import android.os.Process;
 
 @SuppressLint("StaticFieldLeak")
 class JavaCrashHandler implements UncaughtExceptionHandler {
+    private static final String TAG = "JavaCrashHandler";
 
     private static final JavaCrashHandler instance = new JavaCrashHandler();
 
@@ -71,10 +72,13 @@ class JavaCrashHandler implements UncaughtExceptionHandler {
         return instance;
     }
 
-    void initialize(int pid, String processName, String appId, String appVersion, String logDir, boolean rethrow,
-                    int logcatSystemLines, int logcatEventsLines, int logcatMainLines,
-                    boolean dumpFds, boolean dumpNetworkInfo, boolean dumpAllThreads, int dumpAllThreadsCountMax, String[] dumpAllThreadsWhiteList,
+    void initialize(int pid, String processName, String appId, String appVersion,
+                    String logDir, boolean rethrow, int logcatSystemLines,
+                    int logcatEventsLines, int logcatMainLines, boolean dumpFds,
+                    boolean dumpNetworkInfo, boolean dumpAllThreads,
+                    int dumpAllThreadsCountMax, String[] dumpAllThreadsWhiteList,
                     ICrashCallback callback) {
+
         this.pid = pid;
         this.processName = (TextUtils.isEmpty(processName) ? "unknown" : processName);
         this.appId = appId;
@@ -95,7 +99,7 @@ class JavaCrashHandler implements UncaughtExceptionHandler {
         try {
             Thread.setDefaultUncaughtExceptionHandler(this);
         } catch (Exception e) {
-            XCrash.getLogger().e(Util.TAG, "JavaCrashHandler setDefaultUncaughtExceptionHandler failed", e);
+            XCrash.getLogger().e(TAG, "JavaCrashHandler setDefaultUncaughtExceptionHandler failed", e);
         }
     }
 
@@ -132,7 +136,10 @@ class JavaCrashHandler implements UncaughtExceptionHandler {
         //create log file
         File logFile = null;
         try {
-            String logPath = String.format(Locale.US, "%s/%s_%020d_%s__%s%s", logDir, Util.logPrefix, startTime.getTime() * 1000, appVersion, processName, Util.javaLogSuffix);
+            String logPath = String.format(Locale.US, "%s/%s_%020d_%s__%s%s",
+                    logDir, Util.logPrefix, startTime.getTime() * 1000,
+                    appVersion, processName, Util.javaLogSuffix);
+
             logFile = FileManager.getInstance().createLogFile(logPath);
         } catch (Exception e) {
             XCrash.getLogger().e(Util.TAG, "JavaCrashHandler createLogFile failed", e);
@@ -157,12 +164,15 @@ class JavaCrashHandler implements UncaughtExceptionHandler {
                     raf.write(emergency.getBytes("UTF-8"));
                 }
 
-                //If we wrote the emergency info successfully, we don't need to return it from callback again.
+                //If we wrote the emergency info successfully, we don't need to
+                // return it from callback again.
                 emergency = null;
 
                 //write logcat
                 if (logcatMainLines > 0 || logcatSystemLines > 0 || logcatEventsLines > 0) {
-                    raf.write(Util.getLogcat(logcatMainLines, logcatSystemLines, logcatEventsLines).getBytes("UTF-8"));
+                    raf.write(Util.getLogcat(logcatMainLines,
+                            logcatSystemLines, logcatEventsLines)
+                            .getBytes("UTF-8"));
                 }
 
                 //write fds
@@ -179,7 +189,9 @@ class JavaCrashHandler implements UncaughtExceptionHandler {
                 raf.write(Util.getMemoryInfo().getBytes("UTF-8"));
 
                 //write background / foreground
-                raf.write(("foreground:\n" + (ActivityMonitor.getInstance().isApplicationForeground() ? "yes" : "no") + "\n\n").getBytes("UTF-8"));
+                raf.write(("foreground:\n" + (ActivityMonitor.getInstance()
+                        .isApplicationForeground() ? "yes" : "no") + "\n\n")
+                        .getBytes("UTF-8"));
 
                 //write other threads info
                 if (dumpAllThreads) {
@@ -216,8 +228,15 @@ class JavaCrashHandler implements UncaughtExceptionHandler {
                 DateFormat timeFormatter = new SimpleDateFormat(Util.timeFormatterStr, Locale.US);
                 Date lastTime = new Date(libFile.lastModified());
 
-                sb.append("    ").append(libPath).append("(BuildId: unknown. FileSize: ").append(libFile.length()).append(". LastModified: ")
-                        .append(timeFormatter.format(lastTime)).append(". MD5: ").append(md5).append(")\n");
+                sb.append("    ")
+                        .append(libPath)
+                        .append("(BuildId: unknown. FileSize: ")
+                        .append(libFile.length())
+                        .append(". LastModified: ")
+                        .append(timeFormatter.format(lastTime))
+                        .append(". MD5: ")
+                        .append(md5)
+                        .append(")\n");
             } else {
                 sb.append("    ").append(libPath).append(" (Not found)\n");
             }
@@ -268,7 +287,10 @@ class JavaCrashHandler implements UncaughtExceptionHandler {
         String stacktrace = sw.toString();
 
         return Util.getLogHeader(startTime, crashTime, Util.javaCrashType, appId, appVersion)
-                + "pid: " + pid + ", tid: " + Process.myTid() + ", name: " + thread.getName() + "  >>> " + processName + " <<<\n"
+                + "pid: " + pid
+                + ", tid: " + Process.myTid()
+                + ", name: " + thread.getName()
+                + "  >>> " + processName + " <<<\n"
                 + "\n"
                 + "java stacktrace:\n"
                 + stacktrace
@@ -316,7 +338,11 @@ class JavaCrashHandler implements UncaughtExceptionHandler {
             }
 
             sb.append(Util.sepOtherThreads + "\n");
-            sb.append("pid: ").append(pid).append(", tid: ").append(thd.getId()).append(", name: ").append(thd.getName()).append("  >>> ").append(processName).append(" <<<\n");
+            sb.append("pid: ").append(pid)
+                    .append(", tid: ").append(thd.getId())
+                    .append(", name: ").append(thd.getName())
+                    .append("  >>> ").append(processName).append(" <<<\n");
+
             sb.append("\n");
             sb.append("java stacktrace:\n");
             for (StackTraceElement element : stacktrace) {
@@ -332,12 +358,15 @@ class JavaCrashHandler implements UncaughtExceptionHandler {
                 sb.append(Util.sepOtherThreads + "\n");
             }
 
-            sb.append("total JVM threads (exclude the crashed thread): ").append(map.size() - 1).append("\n");
+            sb.append("total JVM threads (exclude the crashed thread): ")
+                    .append(map.size() - 1).append("\n");
+
             if (whiteList != null) {
                 sb.append("JVM threads matched whitelist: ").append(thdMatchedRegex).append("\n");
             }
             if (dumpAllThreadsCountMax > 0) {
-                sb.append("JVM threads ignored by max count limit: ").append(thdIgnoredByLimit).append("\n");
+                sb.append("JVM threads ignored by max count limit: ")
+                        .append(thdIgnoredByLimit).append("\n");
             }
             sb.append("dumped JVM threads:").append(thdDumped).append("\n");
             sb.append(Util.sepOtherThreadsEnding + "\n");

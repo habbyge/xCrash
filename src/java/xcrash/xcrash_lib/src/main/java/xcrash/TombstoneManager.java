@@ -39,8 +39,9 @@ public class TombstoneManager {
     }
 
     /**
-     * Append a customs section (a key-content pair) to the crash log file. After parsing the crash log file
-     * by {@link xcrash.TombstoneParser}, you can retrieve the content with the key specified here.
+     * Append a customs section (a key-content pair) to the crash log file.
+     * After parsing the crash log file by {@link xcrash.TombstoneParser},
+     * you can retrieve the content with the key specified here.
      *
      * <p>Note: This method is generally used in {@link xcrash.ICrashCallback#onCrash(String, String)}.
      *
@@ -137,7 +138,8 @@ public class TombstoneManager {
     /**
      * Delete the tombstone file.
      *
-     * <p>Note: When you use the placeholder file feature by {@link XCrash.InitParameters#setPlaceholderCountMax(int)},
+     * <p>Note: When you use the placeholder file feature by
+     * {@link XCrash.InitParameters#setPlaceholderCountMax(int)},
      * please always use this method to delete tombstone files.
      *
      * @param file The tombstone file object.
@@ -150,7 +152,8 @@ public class TombstoneManager {
     /**
      * Delete the tombstone file.
      *
-     * <p>Note: When you use the placeholder file feature by {@link XCrash.InitParameters#setPlaceholderCountMax(int)},
+     * <p>Note: When you use the placeholder file feature by
+     * {@link XCrash.InitParameters#setPlaceholderCountMax(int)},
      * please always use this method to delete tombstone files.
      *
      * @param path The path of the tombstone file.

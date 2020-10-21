@@ -254,7 +254,8 @@ public class TombstoneParser {
     public static final String keyMemoryInfo = "memory info";
 
     /**
-     * Other threads information for native crash, or traces which including all threads information for ANR.
+     * Other threads information for native crash, or
+     * traces which including all threads information for ANR.
      */
     @SuppressWarnings("WeakerAccess")
     public static final String keyOtherThreads = "other threads";
@@ -284,9 +285,15 @@ public class TombstoneParser {
     public static final String keyXCrashErrorDebug = "xcrash error debug";
 
     private static final Pattern patHeadItem = Pattern.compile("^(.*):\\s'(.*?)'$");
-    private static final Pattern patProcessThread = Pattern.compile("^pid:\\s(.*),\\stid:\\s(.*),\\sname:\\s(.*)\\s+>>>\\s(.*)\\s<<<$");
+
+    private static final Pattern patProcessThread = Pattern.compile(
+            "^pid:\\s(.*),\\stid:\\s(.*),\\sname:\\s(.*)\\s+>>>\\s(.*)\\s<<<$");
+
     private static final Pattern patProcess = Pattern.compile("^pid:\\s(.*)\\s+>>>\\s(.*)\\s<<<$");
-    private static final Pattern patSignalCode = Pattern.compile("^signal\\s(.*),\\scode\\s(.*),\\sfault\\saddr\\s(.*)$");
+
+    private static final Pattern patSignalCode = Pattern.compile(
+            "^signal\\s(.*),\\scode\\s(.*),\\sfault\\saddr\\s(.*)$");
+
     private static final Pattern patAppVersionProcessName = Pattern.compile("^(\\d{20})_(.*)__(.*)$");
 
     private static final Set<String> keyHeadItems = new HashSet<String>(Arrays.asList(
@@ -373,7 +380,6 @@ public class TombstoneParser {
      */
     @SuppressWarnings("unused")
     public static Map<String, String> parse(String logPath, String emergency) throws IOException {
-
         Map<String, String> map = new HashMap<String, String>();
 
         //parse content from log file
@@ -422,10 +428,10 @@ public class TombstoneParser {
         String processName = map.get(keyProcessName);
         String crashType = map.get(keyCrashType);
 
-        if (TextUtils.isEmpty(startTime)
-                || TextUtils.isEmpty(appVersion)
-                || TextUtils.isEmpty(processName)
-                || TextUtils.isEmpty(crashType)) {
+        if (TextUtils.isEmpty(startTime) ||
+                TextUtils.isEmpty(appVersion) ||
+                TextUtils.isEmpty(processName) ||
+                TextUtils.isEmpty(crashType)) {
 
             //get file name
             String filename = logPath.substring(logPath.lastIndexOf('/') + 1);
@@ -456,12 +462,18 @@ public class TombstoneParser {
             }
 
             //get APP version and/or process name
-            if (TextUtils.isEmpty(startTime) || TextUtils.isEmpty(appVersion) || TextUtils.isEmpty(processName)) {
+            if (TextUtils.isEmpty(startTime) ||
+                    TextUtils.isEmpty(appVersion) ||
+                    TextUtils.isEmpty(processName)) {
+
                 Matcher matcher = patAppVersionProcessName.matcher(filename);
                 if (matcher.find() && matcher.groupCount() == 3) {
                     if (TextUtils.isEmpty(startTime)) {
                         long crashTimeLong = Long.parseLong(matcher.group(1), 10) / 1000;
-                        DateFormat timeFormatter = new SimpleDateFormat(Util.timeFormatterStr, Locale.US);
+
+                        DateFormat timeFormatter = new SimpleDateFormat(
+                                Util.timeFormatterStr, Locale.US);
+
                         map.put(keyStartTime, timeFormatter.format(new Date(crashTimeLong)));
                     }
                     if (TextUtils.isEmpty(appVersion)) {
@@ -547,7 +559,10 @@ public class TombstoneParser {
         }
     }
 
-    private static void parseFromReader(Map<String, String> map, BufferedReader br, boolean binary) throws IOException {
+    private static void parseFromReader(Map<String, String> map,
+                                        BufferedReader br, boolean binary)
+                                        throws IOException {
+
         String next, line;
         String sectionTitle = null;
         StringBuilder sectionContent = new StringBuilder();
@@ -639,7 +654,11 @@ public class TombstoneParser {
                     }
 
                     //special case
-                    if (next != null && (next.startsWith("    r0 ") || next.startsWith("    x0 ") || next.startsWith("    eax ") || next.startsWith("    rax "))) {
+                    if (next != null && (next.startsWith("    r0 ") ||
+                            next.startsWith("    x0 ") ||
+                            next.startsWith("    eax ") ||
+                            next.startsWith("    rax "))) {
+
                         //registers
                         status = Status.SECTION;
                         sectionTitle = keyRegisters;
@@ -656,8 +675,11 @@ public class TombstoneParser {
                 case SECTION:
                     if (line.equals(sectionContentEnding) || last) {
                         if (keySingleLineSections.contains(sectionTitle)) {
-                            if (sectionContent.length() > 0 && sectionContent.charAt(sectionContent.length() - 1) == '\n') {
-                                //If there is only one line in the content, then delete the newline character at the end.
+                            if (sectionContent.length() > 0 &&
+                                    sectionContent.charAt(sectionContent.length() - 1) == '\n') {
+
+                                // If there is only one line in the content,
+                                // then delete the newline character at the end.
                                 sectionContent.deleteCharAt(sectionContent.length() - 1);
                             }
                         }

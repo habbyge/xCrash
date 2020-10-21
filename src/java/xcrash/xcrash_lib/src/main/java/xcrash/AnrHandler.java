@@ -73,8 +73,9 @@ class AnrHandler {
     }
 
     @SuppressWarnings("deprecation")
-    void initialize(Context ctx, int pid, String processName, String appId, String appVersion, String logDir,
-                    boolean checkProcessState, int logcatSystemLines, int logcatEventsLines, int logcatMainLines,
+    void initialize(Context ctx, int pid, String processName, String appId,
+                    String appVersion, String logDir, boolean checkProcessState,
+                    int logcatSystemLines, int logcatEventsLines, int logcatMainLines,
                     boolean dumpFds, boolean dumpNetworkInfo, ICrashCallback callback) {
 
         //check API level
@@ -96,6 +97,7 @@ class AnrHandler {
         this.dumpNetworkInfo = dumpNetworkInfo;
         this.callback = callback;
 
+        // FIXME: ANR劫持的核心技术方案
         fileObserver = new FileObserver("/data/anr/", CLOSE_WRITE) {
             public void onEvent(int event, String path) {
                 try {
@@ -171,7 +173,10 @@ class AnrHandler {
         //create log file
         File logFile = null;
         try {
-            String logPath = String.format(Locale.US, "%s/%s_%020d_%s__%s%s", logDir, Util.logPrefix, anrTime.getTime() * 1000, appVersion, processName, Util.anrLogSuffix);
+            String logPath = String.format(Locale.US, "%s/%s_%020d_%s__%s%s",
+                    logDir, Util.logPrefix, anrTime.getTime() * 1000,
+                    appVersion, processName, Util.anrLogSuffix);
+
             logFile = FileManager.getInstance().createLogFile(logPath);
         } catch (Exception e) {
             XCrash.getLogger().e(Util.TAG, "AnrHandler createLogFile failed", e);
@@ -188,12 +193,14 @@ class AnrHandler {
                     raf.write(emergency.getBytes("UTF-8"));
                 }
 
-                //If we wrote the emergency info successfully, we don't need to return it from callback again.
+                //If we wrote the emergency info successfully, we don't
+                // need to return it from callback again.
                 emergency = null;
 
                 //write logcat
                 if (logcatMainLines > 0 || logcatSystemLines > 0 || logcatEventsLines > 0) {
-                    raf.write(Util.getLogcat(logcatMainLines, logcatSystemLines, logcatEventsLines).getBytes("UTF-8"));
+                    raf.write(Util.getLogcat(logcatMainLines, logcatSystemLines,
+                            logcatEventsLines).getBytes("UTF-8"));
                 }
 
                 //write fds
