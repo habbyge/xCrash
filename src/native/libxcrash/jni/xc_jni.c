@@ -79,8 +79,8 @@ static jint xc_jni_init(JNIEnv*       env,
                         jboolean      trace_dump_fds,
                         jboolean      trace_dump_network_info) {
 
-    int              r_crash                                = XCC_ERRNO_JNI;
-    int              r_trace                                = XCC_ERRNO_JNI;
+    int              r_crash                               = XCC_ERRNO_JNI;
+    int              r_trace                               = XCC_ERRNO_JNI;
     
     const char*     c_os_version                           = NULL;
     const char*     c_abi_list                             = NULL;

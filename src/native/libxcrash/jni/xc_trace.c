@@ -203,9 +203,9 @@ static int xc_trace_check_address_valid() {
             r_runtime_instance = 0;
         }
 
-        if (0 != r_runtime_dump
-                && (uintptr_t)xc_trace_libart_runtime_dump >= start
-                && (uintptr_t)xc_trace_libart_runtime_dump < end) {
+        if (0 != r_runtime_dump &&
+                (uintptr_t)xc_trace_libart_runtime_dump >= start &&
+                (uintptr_t)xc_trace_libart_runtime_dump < end) {
 
             r_runtime_dump = 0;
         }
@@ -370,31 +370,33 @@ static void *xc_trace_dumper(void *arg) {
                 XCC_UTIL_THREAD_SEP"Cmd line: %s\n", xc_common_process_name))
             goto end;
 
-        if(0 != xcc_util_write_str(fd, "Mode: ART DumpForSigQuit\n")) goto end;
-        if(0 != xc_trace_load_symbols()) {
-            if(0 != xcc_util_write_str(fd, "Failed to load symbols.\n")) goto end;
-            goto skip;
-        }
-        if(0 != xc_trace_check_address_valid()) {
-            if(0 != xcc_util_write_str(fd, "Failed to check runtime address.\n"))
+        if (0 != xcc_util_write_str(fd, "Mode: ART DumpForSigQuit\n"))
+            goto end;
+        if (0 != xc_trace_load_symbols()) {
+            if(0 != xcc_util_write_str(fd, "Failed to load symbols.\n"))
                 goto end;
             goto skip;
         }
-        if(dup2(fd, STDERR_FILENO) < 0) {
+        if (0 != xc_trace_check_address_valid()) {
+            if (0 != xcc_util_write_str(fd, "Failed to check runtime address.\n"))
+                goto end;
+            goto skip;
+        }
+        if (dup2(fd, STDERR_FILENO) < 0) {
             if(0 != xcc_util_write_str(fd, "Failed to duplicate FD.\n")) goto end;
             goto skip;
         }
 
         xc_trace_dump_status = XC_TRACE_DUMP_ON_GOING;
-        if(sigsetjmp(jmpenv, 1) == 0) {
-            if(xc_trace_is_lollipop)
+        if (sigsetjmp(jmpenv, 1) == 0) {
+            if (xc_trace_is_lollipop)
                 xc_trace_libart_dbg_suspend();
 
             xc_trace_libart_runtime_dump(
                     *xc_trace_libart_runtime_instance,
                     xc_trace_libcpp_cerr);
 
-            if(xc_trace_is_lollipop)
+            if (xc_trace_is_lollipop)
                 xc_trace_libart_dbg_resume();
         } else {
             fflush(NULL);
@@ -404,21 +406,26 @@ static void *xc_trace_dumper(void *arg) {
         dup2(xc_common_fd_null, STDERR_FILENO);
                             
     skip:
-        if(0 != xcc_util_write_str(fd, "\n"XCC_UTIL_THREAD_END"\n")) goto end;
-
-        //write other info
-        if(0 != xcc_util_record_logcat(fd, xc_common_process_id,
-                xc_common_api_level, xc_trace_logcat_system_lines,
-                xc_trace_logcat_events_lines, xc_trace_logcat_main_lines))
+        if (0 != xcc_util_write_str(fd, "\n"XCC_UTIL_THREAD_END"\n"))
             goto end;
 
-        if(xc_trace_dump_fds)
+        //write other info
+        if (0 != xcc_util_record_logcat(fd, xc_common_process_id,
+                xc_common_api_level, xc_trace_logcat_system_lines,
+                xc_trace_logcat_events_lines, xc_trace_logcat_main_lines)) {
+
+            goto end;
+        }
+
+        if (xc_trace_dump_fds)
             if(0 != xcc_util_record_fds(fd, xc_common_process_id)) goto end;
-        if(xc_trace_dump_network_info)
-            if (0 != xcc_util_record_network_info(fd,
-                    xc_common_process_id, xc_common_api_level))
+        if (xc_trace_dump_network_info) {
+            if (0 != xcc_util_record_network_info(fd, xc_common_process_id, xc_common_api_level)) {
                 goto end;
-        if (0 != xcc_meminfo_record(fd, xc_common_process_id)) goto end;
+            }
+        }
+        if (0 != xcc_meminfo_record(fd, xc_common_process_id))
+            goto end;
 
     end:
         //close log file
@@ -475,13 +482,11 @@ static void xc_trace_init_callback(JNIEnv *env) {
     xc_trace_cb_method = NULL;
 }
 
-int xc_trace_init(JNIEnv *env,
-                  int rethrow,
+int xc_trace_init(JNIEnv *env, int rethrow,
                   unsigned int logcat_system_lines,
                   unsigned int logcat_events_lines,
                   unsigned int logcat_main_lines,
-                  int dump_fds,
-                  int dump_network_info) {
+                  int dump_fds, int dump_network_info) {
 
     int r;
     pthread_t thd;
