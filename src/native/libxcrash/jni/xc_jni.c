@@ -19,7 +19,7 @@
 // SOFTWARE.
 //
 
-// Created by caikelun on 2019-03-07.
+// Created by on 2019-03-07.
 
 #include <stdlib.h>
 #include <string.h>

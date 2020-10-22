@@ -19,7 +19,7 @@
 // SOFTWARE.
 //
 
-// Created by caikelun on 2019-09-25.
+// Created by on 2019-09-25.
 package xcrash;
 
 import android.app.Activity;

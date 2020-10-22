@@ -19,7 +19,7 @@
 // SOFTWARE.
 //
 
-// Created by caikelun on 2019-09-03.
+// Created by on 2019-09-03.
 package xcrash;
 
 import android.content.Context;

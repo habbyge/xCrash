@@ -82,7 +82,7 @@ static jmethodID                        xc_trace_cb_method = NULL;
 static int                              xc_trace_notifier = -1;
 
 xc_trace_dump_status_t xc_trace_dump_status = XC_TRACE_DUMP_NOT_START;
-sigjmp_buf                              jmpenv;
+sigjmp_buf jmpenv;
 
 static void xc_trace_load_signal_catcher_tid() {
     char           buf[256];
@@ -146,18 +146,22 @@ static int xc_trace_load_symbols() {
     if (NULL == (xc_trace_libcpp_cerr = xc_dl_sym(libcpp, XCC_UTIL_LIBCPP_CERR)))
         goto end;
 
-    if (xc_common_api_level >= 29) libart = xc_dl_create(XCC_UTIL_LIBART_APEX);
+    if (xc_common_api_level >= 29)
+        libart = xc_dl_create(XCC_UTIL_LIBART_APEX);
     if (NULL == libart && NULL == (libart = xc_dl_create(XCC_UTIL_LIBART)))
         goto end;
     if (NULL == (xc_trace_libart_runtime_instance = (void **)
-        xc_dl_sym(libart, XCC_UTIL_LIBART_RUNTIME_INSTANCE))) goto end;
+            xc_dl_sym(libart, XCC_UTIL_LIBART_RUNTIME_INSTANCE)))
+        goto end;
     if (NULL == (xc_trace_libart_runtime_dump = (xcc_util_libart_runtime_dump_t)
-        xc_dl_sym(libart, XCC_UTIL_LIBART_RUNTIME_DUMP))) goto end;
+            xc_dl_sym(libart, XCC_UTIL_LIBART_RUNTIME_DUMP)))
+        goto end;
     if (xc_trace_is_lollipop) {
         if (NULL == (xc_trace_libart_dbg_suspend = (xcc_util_libart_dbg_suspend_t)
             xc_dl_sym(libart, XCC_UTIL_LIBART_DBG_SUSPEND))) goto end;
-        if (NULL == (xc_trace_libart_dbg_resume = (xcc_util_libart_dbg_resume_t)
+        if (NULL == (xc_trace_libart_dbg_resume = (xcc_util_libart_dbg_resume_t) {
             xc_dl_sym(libart, XCC_UTIL_LIBART_DBG_RESUME))) goto end;
+        }
     }
 
     //OK
@@ -185,7 +189,7 @@ static int xc_trace_check_address_valid() {
         return XCC_ERRNO_SYS;
     }
     
-    while(fgets(line, sizeof(line), f)) {
+    while (fgets(line, sizeof(line), f)) {
         if (2 != sscanf(line, "%"SCNxPTR"-%"SCNxPTR" r", &start, &end))
             continue;
         

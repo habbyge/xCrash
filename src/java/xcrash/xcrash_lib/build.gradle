@@ -20,6 +20,17 @@ android {
             minifyEnabled false
         }
     }
+
+    sourceSets {
+        main {
+            java {
+                srcDirs = ['src/java/xcrash/xcrash_lib/src/main/java']
+            }
+//            cpp {
+//                srcDirs = ['src/main/xcrash/xcrash_lib/src/main/java']
+//            }
+        }
+    }
 }
 
 apply from: rootProject.file('gradle/check.gradle')

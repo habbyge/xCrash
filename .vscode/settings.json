@@ -1,0 +1,8 @@
+{
+  "files.associations": {
+    "inttypes.h": "c",
+    "stdio.h": "c",
+    "setjmp.h": "c",
+    "types.h": "c"
+  }
+}
