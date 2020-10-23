@@ -192,15 +192,15 @@ static int xc_crash_exec_dumper(void *arg) {
 
     //write args to pipe
     struct iovec iovs[12] = {
-        {.iov_base = &xc_crash_spot,                      .iov_len = sizeof(xcc_spot_t)},
-        {.iov_base = xc_crash_log_pathname,               .iov_len = xc_crash_spot.log_pathname_len},
-        {.iov_base = xc_common_os_version,                .iov_len = xc_crash_spot.os_version_len},
-        {.iov_base = xc_common_kernel_version,            .iov_len = xc_crash_spot.kernel_version_len},
-        {.iov_base = xc_common_abi_list,                  .iov_len = xc_crash_spot.abi_list_len},
+        {.iov_base = &xc_crash_spot,             .iov_len = sizeof(xcc_spot_t)},
+        {.iov_base = xc_crash_log_pathname,      .iov_len = xc_crash_spot.log_pathname_len},
+        {.iov_base = xc_common_os_version,       .iov_len = xc_crash_spot.os_version_len},
+        {.iov_base = xc_common_kernel_version,   .iov_len = xc_crash_spot.kernel_version_len},
+        {.iov_base = xc_common_abi_list,         .iov_len = xc_crash_spot.abi_list_len},
         {.iov_base = xc_common_manufacturer,              .iov_len = xc_crash_spot.manufacturer_len},
         {.iov_base = xc_common_brand,                     .iov_len = xc_crash_spot.brand_len},
-        {.iov_base = xc_common_model,                     .iov_len = xc_crash_spot.model_len},
-        {.iov_base = xc_common_build_fingerprint,         .iov_len = xc_crash_spot.build_fingerprint_len},
+        {.iov_base = xc_common_model,             .iov_len = xc_crash_spot.model_len},
+        {.iov_base = xc_common_build_fingerprint, .iov_len = xc_crash_spot.build_fingerprint_len},
         {.iov_base = xc_common_app_id,                    .iov_len = xc_crash_spot.app_id_len},
         {.iov_base = xc_common_app_version,               .iov_len = xc_crash_spot.app_version_len},
         {.iov_base = xc_crash_dump_all_threads_whitelist,
@@ -239,19 +239,22 @@ static void xc_xcrash_record_java_stacktrace() {
     void                             *thread  = NULL;
 
     //is this a java thread?
-    if(JNI_OK == (*xc_common_vm)->GetEnv(xc_common_vm, (void**)&env, XC_JNI_VERSION))
+    if (JNI_OK == (*xc_common_vm)->GetEnv(xc_common_vm, (void**)&env, XC_JNI_VERSION)) {
         XC_JNI_CHECK_PENDING_EXCEPTION(end);
-    else
+    } else {
+        long var = 100L;
         return;
+    }
 
     //yes, this is a java thread
     xc_crash_dump_java_stacktrace = 1;
 
     //in Dalvik, get java stacktrace on the java layer
-    if(xc_common_api_level < 21) return;
+    if (xc_common_api_level < 21) 
+        return;
 
     //peek libc++.so
-    if(xc_common_api_level >= 29) libcpp = xc_dl_create(XCC_UTIL_LIBCPP_APEX);
+    if (xc_common_api_level >= 29) libcpp = xc_dl_create(XCC_UTIL_LIBCPP_APEX);
     if(NULL == libcpp && NULL == (libcpp = xc_dl_create(XCC_UTIL_LIBCPP))) goto end;
     if(NULL == (cerr = xc_dl_sym(libcpp, XCC_UTIL_LIBCPP_CERR))) goto end;
 
@@ -470,7 +473,7 @@ static void xc_crash_signal_handler(int sig, siginfo_t* si, void* uc) {
         if (EINVAL == errno) {
             //this kernel does not support PR_SET_PTRACER_ANY, or Yama is not enabled
             //errno = errno;
-            (void)errno;
+            (void) errno;
         } else {
             xcc_util_write_format_safe(xc_crash_log_fd,
                     XC_CRASH_ERR_TITLE"set traceable failed, errno=%d\n\n",
@@ -596,7 +599,8 @@ static void xc_crash_signal_handler(int sig, siginfo_t* si, void* uc) {
     //JNI callback
     xc_crash_callback();
 
-    if(0 != xcc_signal_crash_queue(si)) goto exit;
+    if (0 != xcc_signal_crash_queue(si))
+         goto exit;
     
     pthread_mutex_unlock(&xc_crash_mutex);
     return;
