@@ -121,6 +121,7 @@ int xcc_signal_crash_register(void (*handler) (int, siginfo_t*, void*)) {
   ss.ss_size  = XCC_SIGNAL_CRASH_STACK_SIZE;
   ss.ss_flags = 0;
   // 该函数设计内存方面的知识(http://www.groad.net/bbs/forum.php?mod=viewthread&tid=7336):
+  // 
   // 一般情况下，信号处理函数被调用时，内核会在进程的栈上为其创建一个栈帧。但是这里就会有一个问题，如果栈的增长到达
   // 了栈的资源限制值(RLIMIT_STACK，使用ulimit命令可以查看，一般为8M)，或是栈已经长得太大(没有 RLIMIT_STACK 
   // 的限制)，以致到达了映射内存(mapped memory)边界，那么此时信号处理函数就没法得到栈帧的分配。

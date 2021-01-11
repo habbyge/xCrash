@@ -69,7 +69,9 @@ static int xc_dl_find_map_start(xc_dl_t *self, const char *pathname) {
     char      *p;
     int        r = XCC_ERRNO_NOTFND;
 
-    if(NULL == (f = fopen("/proc/self/maps", "r"))) return XCC_ERRNO_SYS;
+    if (NULL == (f = fopen("/proc/self/maps", "r"))) {
+        return XCC_ERRNO_SYS;
+    }
     while(fgets(line, sizeof(line), f)) {
         if (2 != sscanf(line, "%"SCNxPTR"-%*"SCNxPTR" %*4s %"SCNxPTR" %*x:%*x %*d%n",
                 &(self->map_start), &offset, &pos)) {

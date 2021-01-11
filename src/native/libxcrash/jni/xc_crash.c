@@ -19,7 +19,7 @@
 // SOFTWARE.
 //
 
-// Created by caikelun on 2019-03-07.
+// Created on 2019-03-07.
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wreserved-id-macro"
@@ -200,11 +200,16 @@ static int xc_crash_exec_dumper(void *arg) {
         {.iov_base = xc_common_manufacturer,              .iov_len = xc_crash_spot.manufacturer_len},
         {.iov_base = xc_common_brand,                     .iov_len = xc_crash_spot.brand_len},
         {.iov_base = xc_common_model,             .iov_len = xc_crash_spot.model_len},
-        {.iov_base = xc_common_build_fingerprint, .iov_len = xc_crash_spot.build_fingerprint_len},
-        {.iov_base = xc_common_app_id,                    .iov_len = xc_crash_spot.app_id_len},
-        {.iov_base = xc_common_app_version,               .iov_len = xc_crash_spot.app_version_len},
-        {.iov_base = xc_crash_dump_all_threads_whitelist,
-                .iov_len = xc_crash_spot.dump_all_threads_whitelist_len}
+        {
+            .iov_base = xc_common_build_fingerprint, 
+            .iov_len = xc_crash_spot.build_fingerprint_len
+        },
+        {.iov_base = xc_common_app_id, .iov_len = xc_crash_spot.app_id_len},
+        {.iov_base = xc_common_app_version, .iov_len = xc_crash_spot.app_version_len},
+        {
+            .iov_base = xc_crash_dump_all_threads_whitelist,
+            .iov_len = xc_crash_spot.dump_all_threads_whitelist_len
+        }
     };
     int iovs_cnt = (0 == xc_crash_spot.dump_all_threads_whitelist_len ? 11 : 12);
     errno = 0;
@@ -254,9 +259,12 @@ static void xc_xcrash_record_java_stacktrace() {
         return;
 
     //peek libc++.so
-    if (xc_common_api_level >= 29) libcpp = xc_dl_create(XCC_UTIL_LIBCPP_APEX);
-    if(NULL == libcpp && NULL == (libcpp = xc_dl_create(XCC_UTIL_LIBCPP))) goto end;
-    if(NULL == (cerr = xc_dl_sym(libcpp, XCC_UTIL_LIBCPP_CERR))) goto end;
+    if (xc_common_api_level >= 29) 
+        libcpp = xc_dl_create(XCC_UTIL_LIBCPP_APEX);
+    if (NULL == libcpp && NULL == (libcpp = xc_dl_create(XCC_UTIL_LIBCPP))) 
+        goto end;
+    if (NULL == (cerr = xc_dl_sym(libcpp, XCC_UTIL_LIBCPP_CERR))) 
+        goto end;
 
     //peek libart.so
     if(xc_common_api_level >= 29) libart = xc_dl_create(XCC_UTIL_LIBART_APEX);
